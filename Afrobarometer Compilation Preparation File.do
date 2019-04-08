@@ -80,7 +80,6 @@ replace q73c=. if q73c==-1 | q73c==9 | q73c==8 | q73c==.a
 replace q73e=. if q73e==-1 | q73e==9 | q73e==7 | q73e==.a
 qui label list Q77
 replace q77=. if q77==-1 | q77==9995 | q77==9997 | q77==9998 | q77==9999
-collapse (mean) q26c q48c q50 q51 q56i q59d q60f q73a q73c q73e q77 combinwt, by (country)
 rename q26c refuse_pay_tax
 tab refuse_pay_tax, gen(refuse_pay_tax_fac)
 rename q48c pp_must_pay_tax
@@ -98,13 +97,13 @@ tab corrupt_tax_offic, gen(corrupt_tax_offic_fac)
 rename q73a pay_gensales_tax
 rename q73c pay_property_tax
 rename q73e pay_selfemp_tax
+format q77 %9.2g
 rename q77 why_avoid_tax
 tab why_avoid_tax, gen(why_avoid_tax_fac)
 rename combinwt combinwt2013
-collapse (mean) refuse_pay_tax pp_must_pay_tax must_vs_no_need_tax hightax_vs_lowtax often_avoid_tax trust_tax_dept corrupt_tax_offic why_avoid_tax corrupt_tax_offic_fac1 corrupt_tax_offic_fac2 corrupt_tax_offic_fac3 corrupt_tax_offic_fac4 hightax_vs_lowtax_fac1 hightax_vs_lowtax_fac2 hightax_vs_lowtax_fac3 hightax_vs_lowtax_fac4 hightax_vs_lowtax_fac5 must_vs_no_need_tax_fac1 must_vs_no_need_tax_fac2 must_vs_no_need_tax_fac3 must_vs_no_need_tax_fac4 must_vs_no_need_tax_fac5 often_avoid_tax_fac1 often_avoid_tax_fac2 often_avoid_tax_fac3 often_avoid_tax_fac4 pay_gensales_tax pay_property_tax pay_selfemp_tax pp_must_pay_tax_fac1 pp_must_pay_tax_fac2 pp_must_pay_tax_fac3 pp_must_pay_tax_fac4 pp_must_pay_tax_fac5 refuse_pay_tax_fac1 refuse_pay_tax_fac2 refuse_pay_tax_fac3 refuse_pay_tax_fac4 refuse_pay_tax_fac5 trust_tax_dept_fac1 trust_tax_dept_fac2 trust_tax_dept_fac3 trust_tax_dept_fac4 why_avoid_tax_fac1 why_avoid_tax_fac10 why_avoid_tax_fac11 why_avoid_tax_fac12 why_avoid_tax_fac13 why_avoid_tax_fac14 why_avoid_tax_fac15 why_avoid_tax_fac2 why_avoid_tax_fac3 why_avoid_tax_fac4 why_avoid_tax_fac5 why_avoid_tax_fac7 why_avoid_tax_fac6 why_avoid_tax_fac8 why_avoid_tax_fac9, by(country)
+collapse (mean) refuse_pay_tax pp_must_pay_tax must_vs_no_need_tax hightax_vs_lowtax often_avoid_tax trust_tax_dept corrupt_tax_offic why_avoid_tax corrupt_tax_offic_fac1 corrupt_tax_offic_fac2 corrupt_tax_offic_fac3 corrupt_tax_offic_fac4 hightax_vs_lowtax_fac1 hightax_vs_lowtax_fac2 hightax_vs_lowtax_fac3 hightax_vs_lowtax_fac4 hightax_vs_lowtax_fac5 must_vs_no_need_tax_fac1 must_vs_no_need_tax_fac2 must_vs_no_need_tax_fac3 must_vs_no_need_tax_fac4 must_vs_no_need_tax_fac5 often_avoid_tax_fac1 often_avoid_tax_fac2 often_avoid_tax_fac3 often_avoid_tax_fac4 pay_gensales_tax pay_property_tax pay_selfemp_tax pp_must_pay_tax_fac1 pp_must_pay_tax_fac2 pp_must_pay_tax_fac3 pp_must_pay_tax_fac4 pp_must_pay_tax_fac5 refuse_pay_tax_fac1 refuse_pay_tax_fac2 refuse_pay_tax_fac3 refuse_pay_tax_fac4 refuse_pay_tax_fac5 trust_tax_dept_fac1 trust_tax_dept_fac2 trust_tax_dept_fac3 trust_tax_dept_fac4 why_avoid_tax_fac1 why_avoid_tax_fac10 why_avoid_tax_fac11 why_avoid_tax_fac12 why_avoid_tax_fac13 why_avoid_tax_fac14 why_avoid_tax_fac2 why_avoid_tax_fac3 why_avoid_tax_fac4 why_avoid_tax_fac5 why_avoid_tax_fac7 why_avoid_tax_fac6 why_avoid_tax_fac8 why_avoid_tax_fac9, by(country)
 gen year=2013
 gen round=5
-
 
 save "merged_r5_data.dta", replace
 
@@ -159,7 +158,7 @@ merge m:1 pp_must_pay_tax using `r2'
 drop _merge
 
 *recast double pp_must_pay_tax refuse_pay_tax must_vs_no_need_tax trust_tax_dept corrupt_tax_offic hightax_vs_lowtax often_avoid_tax pay_gensales_tax pay_property_tax pay_selfemp_tax why_avoid_tax
-*format %16.6f pp_must_pay_tax refuse_pay_tax must_vs_no_need_tax trust_tax_dept corrupt_tax_offic hightax_vs_lowtax often_avoid_tax pay_gensales_tax pay_property_tax pay_selfemp_tax why_avoid_tax
+*format %16.6g pp_must_pay_tax refuse_pay_tax must_vs_no_need_tax trust_tax_dept corrupt_tax_offic hightax_vs_lowtax often_avoid_tax pay_gensales_tax pay_property_tax pay_selfemp_tax why_avoid_tax
 
 order year round, before (refuse_pay_tax)
 sort country year
@@ -225,7 +224,6 @@ lab var why_avoid_tax_fac11 "Why do people avoid paying taxes? -- % answer = Ign
 lab var why_avoid_tax_fac12 "Why do people avoid paying taxes? -- % answer = Negligence "
 lab var why_avoid_tax_fac13 "Why do people avoid paying taxes? -- % answer = Government stopped people from paying the tax(s) "
 lab var why_avoid_tax_fac14 "Why do people avoid paying taxes? -- % answer = Employers don't deduct or don't give to government "
-lab var why_avoid_tax_fac15 "Why do people avoid paying taxes? -- % answer = Other "
 /*Note: due to the Stata command 'collapse' for an nominal variable, one ///
 	should not use the why_avoid_tax as it does not accurately reflect ///
 	the average answer*/
