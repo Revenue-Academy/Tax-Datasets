@@ -15,7 +15,21 @@ gen democracy=(score>= 6 & score!=.)
 gen politylessfree=(score<=0 & score!=.)
 gen politymorefree=(score> 0 & score!=.)
 
+label var autocracy "-6 or less score"
+label var anocracy "-5 to 5 score"
+label var democracy "6 or higher score"
+label var politylessfree "-10 to 0 score"
+label var politymorefree "1 to 10 score"
+
 rename score polityscore
+
+foreach v of varlist _all{
+
+	local u: variable label `v'
+	local x = "[Polity 2017] " + "`u'"
+	label var `v' "`x'"
+	
+}
 
 save "Polity Dataset Democracy.dta", replace
 
