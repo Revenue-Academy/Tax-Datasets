@@ -5,7 +5,7 @@ cd "C:\Users\Joe\Desktop\WB STC\GGOGT\Dataset Compilations\Board Paper\"
 use "Master Dataset.dta", clear
 
 /*Input variables of interest: 'region', 'year', & 'year since'*/
-global v="EAP"
+global v="SSA"
 local y=2016
 local z=2005
 
@@ -92,8 +92,8 @@ cap noisily ttest qualpubadminrating if oil_gas_dum==0 & (year==`z' | year==`y')
 
 /*Country graphs*/
 sort year
-local w="India"
-local x="IND" 
+local w="Ghana"
+local x="GHA" 
 *twoway (connected meantaxindv meantaxcorp meantaxpropr meantaxvat meantaxexcises meantaxtrade meantaxother_tax year if year<=2016, yaxis(1) msymbol(Oh S T + - x) ytitle("% of GDP") title("Performance of Different Tax Types (World)"))
 twoway (connected Tax_Revenue Direct_taxes Indirect_Taxes Income_Taxes Value_Added_Tax Trade_Taxes Tax_on_Goods_and_Services Export_Taxes Excise_Taxes Property_Tax Other_Taxes CIT PIT year if year<=`y' & Country=="`w'", yaxis(1) msymbol(O Oh S T + | x Dh v Sh Th D S O) ytitle("% of GDP") title("Performance of Different Tax Types (`w')"))
 *twoway (connected Tax_Revenue_incl_SC Tax_Revenue Total_Non_Tax_Revenue Social_Contributions year if year<=`y' & Country=="`w'", yaxis(1) msymbol(Oh S T + | x Dh v Sh Th O) ytitle("% of GDP") title("Performance of Different Tax Types (`w')"))
@@ -157,37 +157,37 @@ local b=`b'+1
 
 cap noisily ttest Tax_Revenue if $v==1, by(democracy)
 tteststars
-graph bar Tax_Revenue, over(democracy) note("P-value: $stars") title("Tax_Revenue by democracy in $v vs. RoW")
+graph bar Tax_Revenue if $v==1, over(democracy) note("P-value: $stars") title("Tax_Revenue by democracy vs non-democracy in $v")
 graph export Polityttests`b'.png, replace
 local b=`b'+1
 
 cap noisily ttest Tax_Revenue if $v==1, by(politymorefree)
 tteststars
-graph bar Tax_Revenue, over(politymorefree) note("P-value: $stars") title("Tax_Revenue by politymorefree in $v vs. RoW")
+graph bar Tax_Revenue if $v==1, over(politymorefree) note("P-value: $stars") title("Tax_Revenue by freer vs lessfree in $v")
 graph export Polityttests`b'.png, replace
 local b=`b'+1
 
 cap noisily ttest Tax_Effort  if $v==1, by(democracy)
 tteststars
-graph bar Tax_Effort, over(democracy) note("P-value: $stars") title("Tax_Effort by democracy in $v vs. RoW")
+graph bar Tax_Effort if $v==1, over(democracy) note("P-value: $stars") title("Tax_Effort by democracy vs non-democracy in $v")
 graph export Polityttests`b'.png, replace
 local b=`b'+1
 
 cap noisily ttest Tax_Effort  if $v==1, by(politymorefree)
 tteststars
-graph bar Tax_Effort, over(politymorefree) note("P-value: $stars") title("Tax_Effort by politymorefree in $v vs. RoW")
+graph bar Tax_Effort if $v==1, over(politymorefree) note("P-value: $stars") title("Tax_Effort by freer vs lessfree in $v")
 graph export Polityttests`b'.png, replace
 local b=`b'+1
 
 cap noisily ttest ermrating   if $v==1, by(democracy)
 tteststars
-graph bar ermrating, over(democracy) note("P-value: $stars") title("ermrating by democracy in $v vs. RoW")
+graph bar ermrating if $v==1, over(democracy) note("P-value: $stars") title("ermrating by democracy vs non-democracy in $v")
 graph export Polityttests`b'.png, replace
 local b=`b'+1
 
 cap noisily ttest ermrating   if $v==1, by(politymorefree)
 tteststars
-graph bar ermrating, over(politymorefree) note("P-value: $stars") title("ermrating by politymorefree in $v vs. RoW")
+graph bar ermrating if $v==1, over(politymorefree) note("P-value: $stars") title("ermrating by freer vs lessfree in $v")
 graph export Polityttests`b'.png, replace
 
 /*WBES ttests - Region vs RoW*/
