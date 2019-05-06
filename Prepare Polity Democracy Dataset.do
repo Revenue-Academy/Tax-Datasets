@@ -9,12 +9,16 @@ drop scode country
 
 rename democracy score
 gen autocracy=(score<=-6 & score!=.)
+replace autocracy=. if score==.
 gen anocracy =(score>=-5 & score<=5 & score!=.)
+replace anocracy=. if score==.
 gen democracy=(score>= 6 & score!=.)
+replace democracy=. if score==.
 
 gen politylessfree=(score<=0 & score!=.)
+replace politylessfree=. if score==.
 gen politymorefree=(score> 0 & score!=.)
-
+replace politymorefree=. if score==.
 label var autocracy "-6 or less score"
 label var anocracy "-5 to 5 score"
 label var democracy "6 or higher score"
@@ -22,6 +26,8 @@ label var politylessfree "-10 to 0 score"
 label var politymorefree "1 to 10 score"
 
 rename score polityscore
+
+replace Country_Code="MKD" if Country_Code=="MAC"
 
 foreach v of varlist _all{
 
@@ -41,6 +47,9 @@ drop _merge
 
 cap drop if Country=="Laos"
 cap drop if Country=="Timor-Leste"
+
+replace politylessfree=(polityscore<=0 & polityscore!=.) if Country=="Macao SAR, China"
+replace politymorefree=(polityscore> 0 & polityscore!=.) if Country=="Macao SAR, China"
 
 sort Country year
 save "Master Dataset.dta", replace
