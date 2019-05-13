@@ -348,3 +348,37 @@ sort Country year
 
 save "Master Dataset.dta", replace
 
+/*GSMA Dataset*/
+///Please note that GSMA data used reigonal averages, not country-level data
+gen gsmaReg=""
+replace gsmaReg="Americas" if Reg==3
+replace gsmaReg="Americas" if Reg==5
+replace gsmaReg="Europe" if Reg==2
+foreach v in Armenia Azerbaijan Cyprus Georgia Kazakhstan Tajikistan Turkey ///
+ Turkmenistan Uzbekistan "Kyrgyz Republic" {
+replace gsmaReg="Asia" if Country=="`v'"
+}
+replace gsmaReg="Asia" if Reg==1
+foreach v in Australia Fiji Kiribati Palau Samoa Tonga Tuvalu Vanuatu ///
+ "Marshall Islands" "Micronesia, Fed. Sts." "New Zealand" "Papua New Guinea" ///
+ "Solomon Islands" {
+replace gsmaReg="Oceania" if Country=="`v'"
+}
+replace gsmaReg="Asia" if Reg==6
+replace gsmaReg="Asia" if Reg==4
+foreach v in Algeria Djibouti "Egypt, Arab Rep." Libya Morocco Tunisia {
+replace gsmaReg="Africa" if Country=="`v'"
+}
+replace gsmaReg="Africa" if Reg==7
+
+merge m:m gsmaReg year using "GSMA World Dataset.dta"
+drop if year>=2017
+
+sort Country year
+
+save "Master Dataset - full GSMA.dta", replace
+
+drop netadds* unqsubs* *pct mktpen* capex rev_total rev_recurring rev_nonrecurring ///
+ _merge popcoverage*
+
+save "Master Dataset.dta", replace
