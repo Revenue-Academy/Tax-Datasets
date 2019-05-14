@@ -367,5 +367,11 @@ append using "GSMA Africa Dataset.dta" "GSMA Americas Dataset.dta" ///
  
 sort gsmaReg year
 
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[GSMA 2018] " + "`u'"
+	label var `v' "`x'"
+}
+
 save "GSMA World Dataset.dta", replace
 
