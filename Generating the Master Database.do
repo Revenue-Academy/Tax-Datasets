@@ -379,6 +379,6 @@ sort Country year
 save "Master Dataset - full GSMA.dta", replace
 
 drop netadds* unqsubs* *pct mktpen* capex rev_total rev_recurring rev_nonrecurring ///
- _merge popcoverage*
+ popcoverage* _merge
 
 save "Master Dataset.dta", replace
