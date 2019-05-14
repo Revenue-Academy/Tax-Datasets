@@ -376,6 +376,12 @@ drop if year>=2017
 
 sort Country year
 
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[GSMA 2018] " + "`u'"
+	label var `v' "`x'"
+}
+
 save "Master Dataset - full GSMA.dta", replace
 
 drop netadds* unqsubs* *pct mktpen* capex rev_total rev_recurring rev_nonrecurring ///
