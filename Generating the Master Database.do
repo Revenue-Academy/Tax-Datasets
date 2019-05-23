@@ -108,6 +108,19 @@ merge m:1 Country_Code year using "CPIA Indicators.dta"
 drop if _merge==2
 drop _merge
 
+/* UPDATES FOR CPIA DATA TO SUBSEQUENT YEARS
+tsset cntry year
+
+foreach var in bhrrating brerating dprating emcaverage ermrating eqprurating ///
+ finsecrating fispolrating geneqrating macromgmtrating polsieqcluster ///
+ polinstenvsusrating prrbgovrating pubsecmgmtinstclusteravg qualbfmrating ///
+ qualpubadminrating sprating strpolclusteravg traderating transacctcorrpsrating {
+ 
+	replace `var'=l.`var' if `var'==.
+ 
+ }
+ */
+
 save "Master Dataset.dta", replace
 
 /****************************************/
