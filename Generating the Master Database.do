@@ -1,8 +1,6 @@
 clear all
 set more off
 
-//cd "D:\WB Tax Consultancy"
-
 //This dofile assembles and adapts the datasets created by Eric Lacey and Joseph Massad
 //such that they fit into the dataset already created by Sebastian James, which
 //contains UNU-WIDER data, WDI data, and other data already. We start by labeling
