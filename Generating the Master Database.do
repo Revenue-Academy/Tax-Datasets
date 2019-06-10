@@ -1202,9 +1202,6 @@ save "DAI dataset.dta", replace
 /******GSMA (SSA only)******/
 /***************************/
 
-/*CHANGE DIRECTORY TO GSMA SUB-FOLDER*/
-cd "D:\WB Tax Consultancy\GSMA Africa"
-
 /*ANGOLA*/
 import excel "GSMA Angola data.xls", sheet("Data") firstrow
 
@@ -2807,8 +2804,6 @@ lab variable year ""
 lab variable Country ""
 lab variable gsmaReg ""
 
-/*CHANGE DIRECTORY BACK AND MERGE IN DATA*/
-cd "D:\WB Tax Consultancy"
 save "GSMA SSA Dataset.dta", replace
 
 use "Master Dataset.dta", clear
