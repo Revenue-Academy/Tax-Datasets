@@ -1,0 +1,8 @@
+This folder contains all of the raw data files that are consolidated into the Master Dataset.
+
+There is one dofile, which extracts data from the raw files, cleans the data, reformats the data,
+and performs some minor manipulations before incorporating the data into the Master Dataset.
+
+To recreate the Master Dataset, simply download a zip file of this folder, and run the dofile
+with all other raw files in the same folder. This dofile will generate the master, as well
+as a number of intermediate .dta files, which can safely be deleted if undesirable.
