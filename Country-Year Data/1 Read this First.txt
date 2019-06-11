@@ -1,6 +1,9 @@
-This folder contains all of the raw data files that are consolidated into the Master Dataset.
+The most important item in this folder is Master Dataset.dta, which contains data from
+multiple sources, consolidated into one file at the country-year level, 1990-2016.
 
-There is one dofile (called, Generating the Master Database), which extracts data from the raw files,
+This folder also contains all of the raw data files that were used to create the Master Dataset.
+
+There is one dofile (called, Generating the Master Database.do), which extracts data from the raw files,
 cleans the data, reformats the data, and performs some minor manipulations before incorporating the
 data into the Master Dataset.
 
