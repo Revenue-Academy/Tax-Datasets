@@ -9,19 +9,20 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD....................27
-//WDI.....................58
-//WB Enterprise Surveys...194
-//CPIA....................327
-//Tax Incentives..........428
-//Doing Business..........500
-//Afrobarometer...........656
-//Tax Treaties............975
-//PEFA....................1076
-//Polity IV Dataset.......1174
-//Digital Adoption Index..1233
-//GSMA (SSA only).........1260
-//FCVs....................2880
+//ICTD....................28
+//WDI.....................59
+//WB Enterprise Surveys...195
+//CPIA....................328
+//Tax Incentives..........429
+//Doing Business..........501
+//Afrobarometer...........657
+//Tax Treaties............976
+//PEFA....................1077
+//Polity IV Dataset.......1175
+//Digital Adoption Index..1234
+//GSMA (SSA only).........1261
+//FCVs....................2881
+//WGI.....................2907
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -2899,5 +2900,35 @@ drop _merge
 
 replace FCV=0 if FCV!=1
 label var FCV "[WB Fragile Status] from harmonized list of fragile situations"
+
+save "Master Dataset.dta", replace
+
+/**********************/
+/*********WGI**********/
+/**********************/
+
+import excel using "Worldwide Governance Indicators.xlsx", firstrow cellrange(A1:J4067) clear
+
+rename CountryCode Country_Code
+rename Time year
+rename ControlofCorruption WGI_Corruption
+rename GovernmentEff WGI_Government
+rename PoliticalStability WGI_Stability
+rename RegulatoryQuality WGI_Regulatory
+rename RuleofLaw WGI_Law
+rename VoiceandAcc WGI_Voice
+label var WGI_Corruption "[WGI] Control of Corruption"
+label var WGI_Government "[WGI] Government Effectiveness"
+label var WGI_Stability "[WGI] Political Stability and Absence of Violence/Terrorism"
+label var WGI_Regulatory "[WGI] Regulatory Quality"
+label var WGI_Law "[WGI] Rule of Law"
+label var WGI_Voice "[WGI] Voice and Accountability"
+
+save "WGI.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "WGI.dta"
+drop if _merge==2
+drop _merge TimeCode
 
 save "Master Dataset.dta", replace
