@@ -23,7 +23,7 @@ set more off
 //GSMA (SSA only).........1264
 //FCVs....................2884
 //WGI.....................2910
-//WDI Public Debt.........2940
+//IMF Public Debt.........2940
 //SSA SSNs................2966
 //Latinbarometro..........3036
 
