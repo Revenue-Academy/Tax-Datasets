@@ -9,22 +9,23 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD....................30
-//WDI.....................61
-//WB Enterprise Surveys...197
-//CPIA....................330
-//Tax Incentives..........431
-//Doing Business..........503
-//Afrobarometer...........659
-//Tax Treaties............978
-//PEFA....................1079
-//Polity IV Dataset.......1177
-//Digital Adoption Index..1236
-//GSMA (SSA only).........1263
-//FCVs....................2883
-//WGI.....................2909
-//WDI Public Debt.........2939
-//SSA SSNs................2965
+//ICTD....................31
+//WDI.....................62
+//WB Enterprise Surveys...198
+//CPIA....................331
+//Tax Incentives..........432
+//Doing Business..........504
+//Afrobarometer...........660
+//Tax Treaties............979
+//PEFA....................1080
+//Polity IV Dataset.......1178
+//Digital Adoption Index..1237
+//GSMA (SSA only).........1264
+//FCVs....................2884
+//WGI.....................2910
+//WDI Public Debt.........2940
+//SSA SSNs................2966
+//Latinbarometro..........3036
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -3030,3 +3031,1697 @@ label var ssn_ben_inc "[ASPIRE] Social Safety Nets Beneficiary Incidence (poores
 label var ssn_cov "[ASPIRE] Social Safety Nets Coverage (poorest quintile)"
 
 save "Master Dataset.dta", replace
+
+/*****************/
+/*LATINOBAROMETRO*/
+/*****************/
+
+/*LB 2016*/
+use "Latinobarometro_2016.dta", clear
+rename idenpa Country
+
+keep Country P1ST P2ST P3STGBS P4STGBS P5STGBS P6STICC1 P7STGBS P10ST P24ST P38STA ///
+ P1TIA P2TIB P3TIC P4TID P5TIE P6TIF P7TIG P8TIH P9TII P10TI P11TI P12TI P13TI ///
+ P14TI P15TI P16TI P17TI P20TIA P22TIA P44STA P62ST S1 wt
+
+foreach v of varlist P1ST P2ST P4STGBS P5STGBS P6STICC1 P7STGBS P10ST P38STA P1TIA ///
+ P2TIB P3TIC P4TID P5TIE P6TIF P7TIG P8TIH P9TII P10TI P20TIA P22TIA P44STA P62ST ///
+ S1 {
+
+	replace `v'=. if `v'<1 | `v'==8 | `v'==9
+	
+}
+
+foreach v of varlist P24ST {
+
+	replace `v'=. if `v'<1
+
+}
+
+foreach v of varlist P1ST-S1 {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "P1ST P2ST P3STGBS P4STGBS P5STGBS P6STICC1 P7STGBS P10ST P24ST P38STA P1TIA P2TIB P3TIC P4TID P5TIE P6TIF P7TIG P8TIH P9TII P10TI P11TI P12TI P13TI P14TI P15TI P16TI P17TI P20TIA P22TIA P44STA P62ST S1"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (P1ST P2ST P3STGBS P4STGBS P5STGBS P6STICC1 P7STGBS P10ST P24ST P38STA P1TIA ///
+ P2TIB P3TIC P4TID P5TIE P6TIF P7TIG P8TIH P9TII P10TI P11TI P12TI P13TI P14TI ///
+ P15TI P16TI P17TI P20TIA P22TIA P44STA P62ST S1) (lifesatisfaction countryprogress ///
+ countryproblem econsitnow econsitpast econsitfuture econsitpersonalnow benofpowerful ///
+ scaleavoidtaxes corruptact corruptpres corruptmps corruptgovtoffic corruptlocgovt ///
+ corruptpolice corrupttaxoffic corruptjudges corruptrelldrs corruptbusexec ///
+ morecorrupt bribepublicschool bribehospital bribeofficdoc bribeservices ///
+ bribepolice bribecourts bribereported govtvscorrupt pplvscorrupt corruptionisok ///
+ taxesforinfra lackfood)
+ 
+foreach v of varlist lifesatisfaction-lackfood {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse (mean) lifesatisfaction-lackfood_fac4 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-lackfood_fac4 {
+
+	label var `v' "[LB]`l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var lackfood_fac1 "[LB] Last year, how often have you/family lacked food? 1 (Never)"
+lab var lackfood_fac2 "[LB] Last year, how often have you/family lacked food? 2 (Rarely)"
+lab var lackfood_fac3 "[LB] Last year, how often have you/family lacked food? 3 (Sometimes)"
+lab var lackfood_fac4 "[LB] Last year, how often have you/family lacked food? 4 (Often)"
+
+gen year=2016
+
+save "Latinobarometro_dataset_2016.dta", replace
+
+/*LB 2015*/
+use "Latinobarometro_2015.dta", clear
+rename idenpa Country
+
+keep Country P1ST P2ST P3STGBS P4STGBS P5STICC1 P6STGBS P12TG_B P14ST P18ST ///
+ P21TGB_F P47N P51ST_B P56ST S1 wt
+
+foreach v of varlist P1ST P2ST P3STGBS P4STGBS P5STICC1 P6STGBS P12TG_B P14ST ///
+ P18ST P21TGB_F S1 {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+
+foreach v of varlist P47N P56ST {
+
+	replace `v'=. if `v'==98 | `v'==99 | `v'<1
+
+}
+
+foreach v of varlist P1ST-S1 {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "Country P1ST P2ST P3STGBS P4STGBS P5STICC1 P6STGBS P12TG_B P14ST P18ST P21TGB_F P47N P51ST_B P56ST S1"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (P1ST P2ST P3STGBS P4STGBS P5STICC1 P6STGBS P12TG_B P14ST P18ST P21TGB_F ///
+ P47N P51ST_B P56ST S1) (lifesatisfaction countryprogress econsitnow econsitpast ///
+ econsitfuture econsitpersonalnow econfunction benofpowerful incdisfair refusetaxes ///
+ taxesforinfra citizenspaytaxes scaleavoidtaxes lackfood)
+ 
+replace refusetaxes=1 if refusetaxes==2
+
+foreach v of varlist lifesatisfaction-lackfood {
+
+	tab `v', gen(`v'_fac)
+
+} 
+
+collapse (mean) lifesatisfaction-lackfood_fac4 [pweight=wt], by (Country)
+
+foreach v of varlist lifesatisfaction-lackfood_fac4 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var lackfood_fac1 "[LB] Last year, how often have you/family lacked food? % answering 1 (Never)"
+lab var lackfood_fac2 "[LB] Last year, how often have you/family lacked food? % answering 2 (Rarely)"
+lab var lackfood_fac3 "[LB] Last year, how often have you/family lacked food? % answering 3 (Sometimes)"
+lab var lackfood_fac4 "[LB] Last year, how often have you/family lacked food? % answering 4 (Often)"
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+
+lab var refusetaxes_fac1 "[LB] Have you ever refused to pay taxes to the government? % answering 1 (At least once) "
+lab var refusetaxes_fac2 "[LB] Have you ever refused to pay taxes to the government? % answering 2 (Never) "
+
+gen year=2015
+
+save "Latinobarometro_dataset_2015.dta", replace
+
+/*LB 2013*/
+use "Latinobarometro_2013.dta", clear
+rename idenpa Country
+
+keep Country P1ST P2ST P3STGBS P4STGBS P5STGBS P6STGBS P11ST_A P11ST_B P11ST_C ///
+ P13TGB_B P14ST P27ST P34GBS P58ST P61BD P64GBSM P65GBS P69ST P72ST_C P72ST_D S1 ///
+ S3 wt
+
+foreach v of varlist P1ST P2ST P3STGBS P4STGBS P5STGBS P6STGBS P13TGB_B P14ST ///
+ P27ST P34GBS P61BD P64GBSM P65GBS P69ST P72ST_C P72ST_D S1 S3 {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+
+foreach v of varlist P11ST_A P11ST_B P11ST_C P58ST {
+
+	replace `v'=. if `v'<1 | `v'==98 | `v'==00
+	
+} 
+
+foreach v of varlist P1ST-S3 {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "P1ST P2ST P3STGBS P4STGBS P5STGBS P6STGBS P11ST_A P11ST_B P11ST_C P13TGB_B P14ST P27ST P34GBS P58ST P61BD P64GBSM P65GBS P69ST P72ST_C P72ST_D S1 S3"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (P1ST P2ST P3STGBS P4STGBS P5STGBS P6STGBS P11ST_A P11ST_B P11ST_C ///
+ P13TGB_B P14ST P27ST P34GBS P58ST P61BD P64GBSM P65GBS P69ST P72ST_C P72ST_D S1 ///
+ S3) (lifesatisfaction countryprogress econsitnow econsitpast econsitfuture ///
+ econsitpersonalnow scalepoorrichnow scalepoorrichpast scalepoorrichfuture ///
+ econfunction benofpowerful incdisfair refusetaxes scaleavoidtaxes corruptinpvtsec ///
+ corruptinlocgovt corruptinnatlgovt corruptprogress stsolvecorrupt stsolvepoverty ///
+ pricerise lackfood)
+
+replace refusetaxes=1 if refusetaxes==2
+ 
+foreach v of varlist lifesatisfaction-lackfood {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse (mean) lifesatisfaction-lackfood_fac4 [pweight=wt], by (Country)
+
+foreach v of varlist lifesatisfaction-lackfood_fac4 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var lackfood_fac1 "[LB] Last year, how often have you/family lacked food? % answering 1 (Never)"
+lab var lackfood_fac2 "[LB] Last year, how often have you/family lacked food? % answering 2 (Rarely)"
+lab var lackfood_fac3 "[LB] Last year, how often have you/family lacked food? % answering 3 (Sometimes)"
+lab var lackfood_fac4 "[LB] Last year, how often have you/family lacked food? % answering 4 (Often)"
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+
+lab var refusetaxes_fac1 "[LB] Have you ever refused to pay taxes to the government? % answering 1 (At least once) "
+lab var refusetaxes_fac2 "[LB] Have you ever refused to pay taxes to the government? % answering 2 (Never) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) "
+
+gen year=2013
+
+save "Latinobarometro_dataset_2013.dta", replace
+
+/*LB 2011*/
+use "Latinobarometro_2011.dta", clear
+rename idenpa Country
+
+keep Country P1ST P2ST P3ST_A P3ST_B P4ST P5STIC1A P6ST P12ST P14ST_B P16ST_E ///
+ P17NE P17NF P19ST P21STB P57N_A P57N_B P58N_C P65ST P69ST_A P69ST_B P69ST_C ///
+ P71ST_A P72ST P73ST P74ST P80ST_F P81ST S1NICC7 S6A S7N wt
+
+foreach v of varlist P1ST P2ST P3ST_A P3ST_B P4ST P5STIC1A P6ST P12ST P14ST_B ///
+ P16ST_E P17NE P17NF P19ST P21STB P57N_A P57N_B P65ST P69ST_A P69ST_B P69ST_C ///
+ P73ST P74ST P80ST_F P81ST S1NICC7 S6A S7N {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+
+foreach v of varlist P71ST_A P72ST {
+
+	replace `v'=. if `v'==998 | `v'==000 | `v'==98 | `v'==00 | `v'<1
+
+}
+ 
+foreach v of varlist P1ST-S7N {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "P1ST P2ST P3ST_A P3ST_B P4ST P4ST P5STIC1A P6ST P12ST P14ST_B P16ST_E P17NE P17NF P19ST P21STB P57N_A P57N_B P58N_C P65ST P69ST_A P69ST_B P69ST_C P71ST_A P72ST P73ST P74ST P80ST_F P81ST S1NICC7 S6A S7N"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (P1ST P2ST P3ST_A P3ST_B P4ST P5STIC1A P6ST P12ST P14ST_B P16ST_E P17NE ///
+ P17NF P19ST P21STB P57N_A P57N_B P58N_C P65ST P69ST_A P69ST_B P69ST_C P71ST_A ///
+ P72ST P73ST P74ST P80ST_F P81ST S1NICC7 S6A S7N) (lifesatisfaction ///
+ countryproblem econsitnow polsitnow econsitpast econsitfuture econsitpersonalnow ///
+ incdisfair econfunction bribesjustified demlesscorruption demmoretransparency ///
+ benofpowerful citizenspaytaxes statehelp statedevelop corruptionproblem ///
+ stsolvecorrupt developpvtent mkteconnecessary privatizationbensrich ///
+ scaleavoidtaxes scalepplpaytaxes taxlevel taxfaircollect corruptact ///
+ corruptprogress pricerise lackutilities lackfood)
+ 
+foreach v of varlist lifesatisfaction-lackfood {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-lackfood_fac4 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-lackfood_fac4 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var lackfood_fac1 "[LB] Last year, how often have you/family lacked food? % answering 1 (Never)"
+lab var lackfood_fac2 "[LB] Last year, how often have you/family lacked food? % answering 2 (Rarely)"
+lab var lackfood_fac3 "[LB] Last year, how often have you/family lacked food? % answering 3 (Sometimes)"
+lab var lackfood_fac4 "[LB] Last year, how often have you/family lacked food? % answering 4 (Often)"
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+ 
+gen year=2011
+
+save "Latinobarometro_dataset_2011.dta", replace
+
+/*LB 2010*/
+use "Latinobarometro_2010.dta", clear
+rename idenpa Country
+
+keep Country P1ST P2ST P3ST_A P3ST_B P4ST P5ST_A P6ST P9ST P11ST_B P12ST P13ST_A ///
+ P13ST_B P13ST_C P14ST_D P19ST_B P27ST_A P56ST P57ST_A P58ST P62N P68ST P70ST_E ///
+ P75ST_A P75ST_B P75ST_C S6A S6B wt
+
+foreach v of varlist P1ST P2ST P3ST_A P3ST_B P4ST P5ST_A P6ST P9ST P11ST_B P12ST ///
+ P14ST_D P19ST_B P27ST_A P56ST P62N P68ST P70ST_E P75ST_A P75ST_B P75ST_C S6A S6B {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+
+foreach v of varlist P13ST_A P13ST_B P13ST_C P57ST_A P58ST {
+
+	replace `v'=. if `v'==98 | `v'==00 | `v'==998 | `v'==000 | `v'<1
+
+}
+ 
+ foreach v of varlist P1ST-S6B {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "P1ST P2ST P3ST_A P3ST_B P4ST P5ST_A P6ST P9ST P11ST_B P12ST P13ST_A P13ST_B P13ST_C P14ST_D P19ST_B P27ST_A P56ST P57ST_A P58ST P62N P68ST P70ST_E P75ST_A P75ST_B P75ST_C S6A S6B"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (P1ST P2ST P3ST_A P3ST_B P4ST P5ST_A P6ST P9ST P11ST_B P12ST P13ST_A ///
+ P13ST_B P13ST_C P14ST_D P19ST_B P27ST_A P56ST P57ST_A P58ST P62N P68ST P70ST_E P75ST_A ///
+ P75ST_B P75ST_C S6A) (lifesatisfaction countryproblem econsitnow polsitnow ///
+ econsitpast econsitfuture econsitpersonalnow countryprogress econfunction ///
+ incdisfair scalepoorrichnow scalepoorrichpast scalepoorrichfuture benofpowerful ///
+ citizenspaytaxes richpoorconflict refusetaxes scaleavoidtaxes scalepplpaytaxes ///
+ pplpaytaxes stsolveproblems corruptprogress developpvtent mkteconnecessary ///
+ privatizationbensrich lackutilities)
+
+replace benofpowerful=1 if benofpowerful==2
+replace benofpowerful=2 if benofpowerful==3 | benofpowerful==4
+ 
+foreach v of varlist lifesatisfaction-scaleavoidtaxes {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-scaleavoidtaxes_fac10 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-scaleavoidtaxes_fac10 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+
+lab var refusetaxes_fac1 "[LB] Have you ever refused to pay taxes to the government? % answering 1 (At least once) "
+lab var refusetaxes_fac2 "[LB] Have you ever refused to pay taxes to the government? % answering 2 (Never) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) " 
+ 
+gen year=2010
+ 
+save "Latinobarometro_dataset_2010.dta", replace
+
+/*LB 2009*/
+use "Latinobarometro_2009.dta", clear
+rename idenpa Country
+
+keep Country p1st p2st p3st_a p3st_b p4st p5st p6st p9st p12st_b p14st p17st_a p17st_b ///
+ p17st_c p25st_b p60st_b p61st p73st_d p74st p81st_a p81st_b p81st_c s4a s4b wt
+
+foreach v of varlist p1st p2st p3st_a p3st_b p4st p5st p6st p9st p12st_b p14st ///
+ p25st_b p60st_b p73st_d p74st p81st_a p81st_b p81st_c s4a s4b {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+ 
+foreach v of varlist p17st_a p17st_b p17st_c p61st {
+
+	replace `v'=. if `v'==98 | `v'==00 | `v'==97 | `v'<1
+	
+}
+ 
+ foreach v of varlist p1st-s4b {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "p1st p2st p3st_a p3st_b p4st p5st p6st p9st p12st_b p14st p17st_a p17st_b p17st_c p25st_b p60st_b p61st p73st_d p74st p81st_a p81st_b p81st_c s4a s4b"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p1st p2st p3st_a p3st_b p4st p5st p6st p9st p12st_b p14st p17st_a ///
+ p17st_b p17st_c p25st_b p60st_b p61st p73st_d p74st p81st_a p81st_b p81st_c ///
+ s4a) (lifesatisfaction countryproblem econsitnow polsitnow econsitpast ///
+ econsitfuture econsitpersonalnow countryprogress econfunction incdisfair ///
+ scalepoorrichnow scalepoorrichpast scalepoorrichfuture citizenspaytaxes ///
+ avoidtaxes scaleavoidtaxes corruptact corruptprogress mkteconisbest ///
+ developpvtent mkteconnecessary lackutilities)
+ 
+foreach v of varlist lifesatisfaction-scaleavoidtaxes {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-scaleavoidtaxes_fac10 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-scaleavoidtaxes_fac10 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) "
+
+gen year=2009
+ 
+save "Latinobarometro_dataset_2009.dta", replace
+
+/*LB 2008*/
+use "Latinobarometro_2008.dta", clear
+rename idenpa Country
+ 
+keep Country p2st p3st p4st p5st p6st p7st p9st p12st_a p12st_b p12st_c P20STB ///
+  p22st_b p25st p27st p72st_d p73st p75n s4a s4b wt
+
+foreach v of varlist p3st p4st p5st p6st p7st P20STB p22st_b p25st p27st p72st_d ///
+ p73st p75n s4a s4b {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+
+foreach v of varlist p12st_a p12st_b p12st_c {
+
+	replace `v'=. if `v'==98 | `v'==00 | `v'<1
+	
+}
+
+foreach v of varlist p3st-s4b {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "p3st p4st p5st p6st p7st p9st p12st_a p12st_b p12st_c P20STB p22st_b p25st p27st p72st_d p73st p75n  s4a s4b"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p3st p4st p5st p6st p7st p9st p12st_a p12st_b p12st_c P20STB p22st_b ///
+ p25st p27st p72st_d p73st p75n  s4a) (countryprogress econsitnow econsitpast ///
+ econsitfuture econsitpersonalnow countryproblem scalepoorrichnow scalepoorrichpast ///
+ scalepoorrichfuture citizenspaytaxes econfunction benofpowerful lifesatisfaction ///
+ corruptact corruptprogress polofficcorrupt lackutilities)
+ 
+foreach v of varlist countryprogress-lackutilities {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse countryprogress-lackutilities_fac2 [pweight=wt], by(Country)
+
+foreach v of varlist countryprogress-lackutilities_fac2 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) "
+ 
+gen year=2008
+ 
+save "Latinobarometro_dataset_2008.dta", replace
+
+/*LB 2007*/
+use "Latinobarometro_2007.dta", clear
+rename idenpa Country
+
+keep Country p1st p2st p3st p6stma p6stmb p6stmc p7st p13stb p17st P19NB p32ncc ///
+ p54sta p54stb p54stc p54std p71st_b p90na p92stb p93st p94st p95st_a p97n p100st ///
+ s3na s3nb wt
+
+foreach v of varlist p1st p2st p3st p13stb p17st P19NB p32ncc p54sta p54stb ///
+  p54stc p54std p71st_b p90na p92stb p93st p94st s3na s3nb p97n p100st {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+
+foreach v of varlist p6stma p6stmb p6stmc p93st p95st_a {
+
+	replace `v'=. if `v'==98 | `v'==00 | `v'==101 | `v'==102 | `v'==103 | `v'<1
+
+}
+ 
+  foreach v of varlist p1st-s3nb {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "p1st p2st p3st p6stma p6stmb p6stmc p7st p13stb p17st P19NB p32ncc p54sta p54stb p54stc p54std  p71st_b p90na p92stb p93st p94st p95st_a p97n p100st s3na s3nb"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p1st p2st p3st p6stma p6stmb p6stmc p7st p13stb p17st P19NB p32ncc ///
+ p54sta p54stb p54stc p54std  p71st_b p90na p92stb p93st p94st p95st_a p97n p100st ///
+ s3na) (lifesatisfaction econsitfuture econfunction scalepoorrichnow ///
+ scalepoorrichpast scalepoorrichfuture countryproblem govtpromwelfare incdisfair ///
+ citizenspaytaxes fightpoverty privatizationben mkteconnecessary mkteconbest ///
+ developpvtent corruptact richpoorconflict avoidtaxes scalepplpaytaxes taxlevel ///
+ bribejustified pubadminforppl econsitnow lackutilities)
+ 
+foreach v of varlist lifesatisfaction-lackutilities {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-lackutilities_fac2 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-lackutilities_fac2 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) " 
+ 
+gen year=2007
+ 
+save "Latinobarometro_dataset_2007.dta", replace
+
+/*LB 2006*/
+use "Latinobarometro_2006.dta", clear
+rename idenpa Country
+
+keep Country p1st_a p2st p3st p4st p5st p10st p11st p13st_a p13st_b p13st_c p16n ///
+ p20stm p22st_b p31stm p33st p42st wt
+
+foreach v of varlist p1st_a p2st p3st p4st p5st p11st p42st {
+
+	replace `v'=. if `v'<1 | `v'==8
+
+}
+
+foreach v of varlist p13st_a p13st_b p13st_c p16n p20stm p22st_b p31stm p33st {
+
+
+	replace `v'=. if `v'<1
+
+}
+ 
+ 
+  foreach v of varlist p1st_a-p42st {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "p1st_a p2st p3st p4st p5st p10st p11st p13st_a p13st_b p13st_c p16n p20stm p22st_b p31stm p33st p42st"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p1st_a-p42st) (lifesatisfaction econsitnow econsitpast econsitfuture ///
+ econsitpersonalnow countryproblem timetodevelop scalepoorrichnow scalepoorrichpast ///
+ scalepoorrichfuture scalestvspvt benofpowerful govtpromwelfare econfunction ///
+ corruptprogress bribeinpreselection)
+ 
+foreach v of varlist lifesatisfaction-bribeinpreselection {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-bribeinpreselection_fac2 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-bribeinpreselection {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+ 
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) "
+ 
+gen year=2006
+ 
+save "Latinobarometro_dataset_2006.dta", replace
+
+/*LB 2005*/
+use "Latinobarometro_2005.dta", clear
+rename idenpa Country
+
+keep Country p1st p2st p3st p4st p5st p8st p10st p11st p25sta p30st p40std ///
+ p40ste p53st p77st p78st p79st p80st p82stb p83st p95st wt
+
+foreach v of varlist p1st p2st p3st p4st p5st p10st p11st p25sta p30st p40std ///
+ p40ste p53st p77st p78st p79st p80st p82stb p83st p95st {
+
+	replace `v'=. if `v'<1
+
+}
+ 
+   foreach v of varlist p1st-p95st {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "p1st p2st p3st p4st p5st p8st p10st p11st p25sta p30st p40std p40ste p53st p77st p78st p79st p80st p82stb p83st p95st"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p1st-p95st) (lifesatisfaction econsitnow econsitpast econsitfuture ///
+ econsitpersonalnow countryproblem timetodevelop countryprogress mkteconnecessary ///
+ pubinstfunction trustgovt developpvtent econfunction taxlevel VATfrequency ///
+ taxfaircollect scaleavoidtaxes corruptact corruptprogress scalepoorrichpast)
+ 
+foreach v of varlist lifesatisfaction-scalepoorrichpast {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-scalepoorrichpast_fac10 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-scalepoorrichpast_fac10 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+gen year=2005
+
+save "Latinobarometro_dataset_2005.dta", replace
+
+/*LB 2004*/
+use "Latinobarometro_2004.dta"
+rename idenpa Country
+
+keep Country p1st p2st p3st p4st p5st p9sta p9stb p9stc p10st p24wvs p27nd p49st ///
+ p50sta-p50sti p51stb p54st p55n p56na p56nb p56nc p58st wt
+
+foreach v of varlist p1st p2st p3st p4st p5st p9sta p9stb p9stc p24wvs p27nd ///
+ p49st p51stb p54st p55n p56na p56nb p56nc p58st {
+
+	replace `v'=. if `v'<1
+
+}
+ 
+foreach v of varlist p50sta-p50sti {
+
+	replace `v'=. if `v'<0
+
+} 
+
+    foreach v of varlist p1st-p58st {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "p1st p2st p3st p4st p5st p9sta p9stb p9stc p10st p24wvs p27nd p49st p50sta p50stb p50stc p50std p50ste p50stf p50stg p50sth p50sti p51stb p54st p55n p56na p56nb p56nc p58st"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p1st-p58st) (lifesatisfaction econsitnow econsitpast econsitfuture ///
+ econsitpersonalnow scalepoorrichnow scalepoorrichpast scalepoorrichfuture ///
+ countryproblem benofpowerful developpvtent VATfrequency rnopaydishonesty ///
+ rnopaysly rnopaynopt rnopaylackcivic rnopaynomeans rnopayillspent rnopaytoohigh ///
+ rnopaycorrupt rnopayother corruptact corruptprogress endcorrupttime prbribepolice ///
+ prbribejudge prbribeminister econfunction)
+ 
+foreach v of varlist lifesatisfaction-econfunction {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-econfunction_fac4 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-econfunction_fac4 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) "
+
+gen year=2004
+ 
+save "Latinobarometro_dataset_2004.dta", replace
+
+/*LB 2003*/
+use "Latinobarometro_2003.dta"
+rename idenpa Country
+
+keep Country p1st p2st p3st p4st p8st p11st p19st p22n_f p28n p29n p30na p30nb ///
+ p66stb p75stb p77n wt
+
+foreach v of varlist p1st p2st p3st p4st p11st p19st p22n_f p28n p29n p30na ///
+ p30nb p66stb p75stb p77n {
+
+	replace `v'=. if `v'<1
+
+} 
+ 
+    foreach v of varlist p1st-p77n {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+
+local list "p1st p2st p3st p4st p8st p11st p19st p22n_f p28n p29n p30na p30nb p66stb p75stb p77n"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p1st-p77n) (econsitnow econsitpast econsitfuture econsitpersonalnow ///
+ countryproblem econfunction lifesatisfaction mkteconnecessary taxlevel ///
+ VATfrequency taxfaircollect taxesspentwell scaleavoidtaxes corruptact ///
+ corruptprogress)
+ 
+foreach v of varlist econsitnow-corruptprogress {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse econsitnow-corruptprogress_fac4 [pweight=wt], by(Country)
+
+foreach v of varlist econsitnow-corruptprogress_fac4 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var scaleavoidtaxes_fac1  "[LB] How justified is tax evasion? % answering 1 (not at all justified) "
+lab var scaleavoidtaxes_fac2  "[LB] How justified is tax evasion? % answering 2 "
+lab var scaleavoidtaxes_fac3  "[LB] How justified is tax evasion? % answering 3 "
+lab var scaleavoidtaxes_fac4  "[LB] How justified is tax evasion? % answering 4 "
+lab var scaleavoidtaxes_fac5  "[LB] How justified is tax evasion? % answering 5 "
+lab var scaleavoidtaxes_fac6  "[LB] How justified is tax evasion? % answering 6 "
+lab var scaleavoidtaxes_fac7  "[LB] How justified is tax evasion? % answering 7 "
+lab var scaleavoidtaxes_fac8  "[LB] How justified is tax evasion? % answering 8 "
+lab var scaleavoidtaxes_fac9  "[LB] How justified is tax evasion? % answering 9 "
+lab var scaleavoidtaxes_fac10 "[LB] How justified is tax evasion? % answering 10 (totally justified) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+gen year=2003
+ 
+save "Latinobarometro_dataset_2003.dta", replace
+
+/*LB 2002*/
+use "Latinobarometro_2002.dta", clear
+rename idenpa Country
+
+keep Country p1wvs p2sta p2stb p2stc p2std p4st p6stc p8stb p16st p20no2 p22essf ///
+ p23st p49stb p52wvsb wt
+
+foreach v of varlist p1wvs p2sta p2stb p2stc p2std p6stc p8stb p16st p20no2 ///
+ p22essf p23st p49stb p52wvsb  {
+	replace `v'=. if `v'<1
+} 
+ 
+foreach v of varlist p1wvs-p52wvsb {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+ 
+local list "p1wvs p2sta p2stb p2stc p2std p4st p6stc p8stb p16st p20no2 p22essf p23st p49stb p52wvsb"
+ 
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+/*Question p1wvs about happiness is recoded as lifesatisfaction*/
+rename (p1wvs-p52wvsb) (lifesatisfaction econsitnow econsitpast econsitfuture ///
+ econsitpersonalnow countryproblem corruptionchange corruptact incdisfair ///
+ timetodevelop taxesvswelfare econfunction avoidtaxes bribejustified)
+
+foreach v of varlist lifesatisfaction-bribejustified {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse lifesatisfaction-bribejustified_fac10 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-bribejustified_fac10 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var econfunction_fac1 "[LB] How satisfied are you with the country's economy? % answering 1 (Very) "
+lab var econfunction_fac2 "[LB] How satisfied are you with the country's economy? % answering 2 (Quite) "
+lab var econfunction_fac3 "[LB] How satisfied are you with the country's economy? % answering 3 (Not very) "
+lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy? % answering 4 (Not at all) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+ 
+gen year=2002
+ 
+save "Latinobarometro_dataset_2002.dta", replace
+
+/*LB 2001*/
+use "Latinobarometro_2001.dta", clear
+rename idenpa Country
+
+keep Country p1st p2st p3st p4st p11st p13st p16stc p18nb p41st p49nasa wt
+
+foreach v of varlist p1st p2st p3st p4st p11st p16stc p18nb p41st p49nasa {
+
+	replace `v'=. if `v'<1
+
+}
+
+foreach v of varlist p1st-p49nasa {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+ 
+local list "p1st p2st p3st p4st p11st p13st p16stc p18nb p41st p49nasa"
+ 
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (p1st-p49nasa) (econsitnow econsitpast econsitfuture econsitpersonalnow ///
+ incdisfair countryproblem corruptionchange corruptact lifesatisfaction bribepubemp)
+ 
+foreach v of varlist econsitnow-bribepubemp {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse econsitnow-bribepubemp_fac4 [pweight=wt], by(Country)
+
+foreach v of varlist econsitnow-bribepubemp_fac4 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var incdisfair_fac1 "[LB] How fair is the income distribution? % answering 1 (Very fair) "
+lab var incdisfair_fac2 "[LB] How fair is the income distribution? % answering 2 (Fair) "
+lab var incdisfair_fac3 "[LB] How fair is the income distribution? % answering 3 (Unfair) "
+lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4 (Very unfair) "
+ 
+gen year=2001
+ 
+save "Latinobarometro_dataset_2001.dta", replace
+
+/*LB 2000*/
+use "Latinobarometro_2000.dta", clear
+rename idenpa Country
+
+keep Country P1ST P2ST P3ST P4ST P7ST P8ST P12ST P14CG_A P14CG_B P14CG_C P21ST_E ///
+ P24ST_A wt
+
+foreach v of varlist P1ST P2ST P3ST P4ST P7ST P8ST P14CG_A P14CG_B P14CG_C ///
+ P21ST_E P24ST_A {
+
+	replace `v'=. if `v'<1
+
+} 
+ 
+foreach v of varlist P1ST-P24ST_A {
+	local l`v' : variable label `v'
+		if `"`l`v''"' == "" {
+		local l`v' "`v'"
+	}
+}
+ 
+local list "P1ST P2ST P3ST P4ST P7ST P8ST P12ST P14CG_A P14CG_B P14CG_C P21ST_E P24ST_A"
+ 
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (P1ST-P24ST_A) (econsitnow econsitpast econsitfuture econsitpersonalnow ///
+ countryprogress lifesatisfaction countryproblem scalepoorrichnow scalepoorrichpast ///
+ scalepoorrichfuture corruptionchange corruptionproblem)
+ 
+foreach v of varlist econsitnow-corruptionproblem {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse econsitnow-corruptionproblem_fac4 [pweight=wt], by(Country)
+
+foreach v of varlist econsitnow-corruptionproblem_fac4 {
+
+	label var `v' "[LB] `l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (Same) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (Worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (Same) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (Worse) "
+
+lab var scalepoorrichnow_fac1  "[LB] Scale of where you see yourself on income distribution. % answering 1 (Bottom) "
+lab var scalepoorrichnow_fac2  "[LB] Scale of where you see yourself on income distribution. % answering 2 "
+lab var scalepoorrichnow_fac3  "[LB] Scale of where you see yourself on income distribution. % answering 3 "
+lab var scalepoorrichnow_fac4  "[LB] Scale of where you see yourself on income distribution. % answering 4 "
+lab var scalepoorrichnow_fac5  "[LB] Scale of where you see yourself on income distribution. % answering 5 "
+lab var scalepoorrichnow_fac6  "[LB] Scale of where you see yourself on income distribution. % answering 6 "
+lab var scalepoorrichnow_fac7  "[LB] Scale of where you see yourself on income distribution. % answering 7 "
+lab var scalepoorrichnow_fac8  "[LB] Scale of where you see yourself on income distribution. % answering 8 "
+lab var scalepoorrichnow_fac9  "[LB] Scale of where you see yourself on income distribution. % answering 9 "
+lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income distribution. % answering 10 (Top) "
+ 
+gen year=2000
+ 
+save "Latinobarometro_dataset_2000.dta", replace
+
+/***************************************/
+/*Append Latinobarometro files together*/
+/***************************************/
+
+use "Latinobarometro_dataset_2016.dta", clear
+
+foreach u in 2015 2013 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 ///
+ 2000 {
+
+	append using "Latinobarometro_dataset_`u'.dta"
+ 
+}
+
+/*Consolidate variables*/
+keep Country year lifesatisfaction* countryprogress* econsitnow* econsitpast* ///
+ econsitfuture* scaleavoidtaxes* benofpowerful* lackfood* econfunction* ///
+ incdisfair* scalepoorrichnow* refusetaxes*
+
+lab var lifesatisfaction "[LB] How satisfied are you with your life? (Mean) "
+lab var countryprogress "[LB] What is the state of progress in [country]? (Mean) "
+lab var econsitnow "[LB] What is the country's economic situation? (Mean) "
+lab var econsitpast "[LB] What was the country's economic situation a year ago? (Mean) "
+lab var econsitfuture "[LB] What will be the country's economic situation in a year? (Mean) "
+lab var benofpowerful "[LB] Do you agree or disagree that [country] is run for the benefit of the powerful? "
+lab var scaleavoidtaxes  "[LB] How justified is tax evasion? (Mean) "
+lab var econfunction "[LB] How satisfied are you with the country's economy? (Mean)"
+lab var incdisfair "[LB] How fair is the income distribution? (Mean) "
+lab var refusetaxes "[LB] Have you ever refused to pay taxes to the government? (Mean) "
+lab var scalepoorrichnow "[LB] Scale of where you see yourself on income distribution. (Mean) "
+lab var lackfood "[LB] Last year, how often have you/family lacked food? (Mean)"
+
+lab var benofpowerful_fac1 "[LB] [Country] is run for the benefit of the powerful. % answering Strongly agree or Agree "
+lab var benofpowerful_fac2 "[LB] [Country] is run for the benefit of the powerful. % answering Disagree or Strongly disagree "
+
+decode Country, gen(country)
+drop Country
+rename country Country
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Dominican Republic" if Country=="Dominican Rep."
+
+order Country year, first
+sort Country year
+
+save "Latinobarometro_dataset_combined.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "Latinobarometro_dataset_combined.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
