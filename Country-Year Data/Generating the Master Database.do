@@ -2957,7 +2957,7 @@ merge m:1 Country year using "IMF Central Government Debt.dta"
 drop if _merge==2
 drop _merge
 
-label var publicdebtimf "[WDI] Public Debt (% of GDP)"
+label var publicdebtimf "[IMF] Public Debt (% of GDP)"
 
 save "Master Dataset.dta", replace
 
