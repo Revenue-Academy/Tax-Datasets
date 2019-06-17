@@ -9,20 +9,22 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD....................28
-//WDI.....................59
-//WB Enterprise Surveys...195
-//CPIA....................328
-//Tax Incentives..........429
-//Doing Business..........501
-//Afrobarometer...........657
-//Tax Treaties............976
-//PEFA....................1077
-//Polity IV Dataset.......1175
-//Digital Adoption Index..1234
-//GSMA (SSA only).........1261
-//FCVs....................2881
-//WGI.....................2907
+//ICTD....................30
+//WDI.....................61
+//WB Enterprise Surveys...197
+//CPIA....................330
+//Tax Incentives..........431
+//Doing Business..........503
+//Afrobarometer...........659
+//Tax Treaties............978
+//PEFA....................1079
+//Polity IV Dataset.......1177
+//Digital Adoption Index..1236
+//GSMA (SSA only).........1263
+//FCVs....................2883
+//WGI.....................2909
+//WDI Public Debt.........2939
+//SSA SSNs................2965
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -2930,5 +2932,101 @@ use "Master Dataset.dta", clear
 merge m:1 Country_Code year using "WGI.dta"
 drop if _merge==2
 drop _merge TimeCode
+
+save "Master Dataset.dta", replace
+
+/*****************************/
+/*IMF CENTRAL GOVERNMENT DEBT*/
+/*****************************/
+
+import excel "imf-dm-export-20190612.xls", sheet("DEBT1") firstrow clear
+rename B publicdebtimf
+rename DEBTofGDP Country
+drop in 1
+gen year=2015
+
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="Yemen, Rep." if Country=="Yemen"
+replace Country="Iran, Islamic Rep." if Country=="Iran"
+
+save "IMF Central Government Debt.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "IMF Central Government Debt.dta"
+drop if _merge==2
+drop _merge
+
+label var publicdebtimf "[WDI] Public Debt (% of GDP)"
+
+save "Master Dataset.dta", replace
+
+/***************************/
+/*SOCIAL SAFETY NETS in SSA*/
+/***************************/
+
+import excel "SSA social safety nets benefit incidence, poorest quintile.xlsx", ///
+ sheet("Data") firstrow case(lower) clear
+ 
+drop seriescode
+drop countrycode
+
+foreach u of varlist yr1998-yr2018 {
+
+	replace `u'="" if `u'==".."
+
+}
+
+rename countryname Country
+destring yr1998-yr2018, replace
+
+reshape long yr, i(Country) j(year)
+
+rename yr ssn_ben_inc
+drop seriesname
+
+save "SSA social safety nets benefit incidence, poorest quintile.dta", replace
+
+clear all
+
+import excel "SSA social safety nets coverage, poorest quintile.xlsx", ///
+ sheet("Data") firstrow case(lower)
+
+drop seriescode
+drop countrycode
+
+foreach u of varlist yr1998-yr2018 {
+
+	replace `u'="" if `u'==".."
+
+}
+
+rename countryname Country
+destring yr1998-yr2018, replace
+
+reshape long yr, i(Country) j(year)
+
+rename yr ssn_cov
+drop seriesname
+
+save "SSA social safety nets coverage, poorest quintile.dta", replace
+
+merge m:1 Country year using "SSA social safety nets benefit incidence, poorest quintile.dta"
+drop _merge
+
+***Prepping to be merged into Master Dataset*
+drop if year>2016
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Swaziland" if Country=="Eswatini"
+
+save "SSA social safety nets coverage and benefit incidence, poorest quintile.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "SSA social safety nets coverage and benefit incidence, poorest quintile.dta"
+drop if _merge==2
+drop _merge
+
+label var ssn_ben_inc "[ASPIRE] Social Safety Nets Beneficiary Incidence (poorest quintile)"
+label var ssn_cov "[ASPIRE] Social Safety Nets Coverage (poorest quintile)"
 
 save "Master Dataset.dta", replace
