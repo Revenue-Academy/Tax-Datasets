@@ -4723,5 +4723,13 @@ merge m:1 Country year using "Latinobarometro_dataset_combined.dta"
 drop if _merge==2
 drop _merge
 
+tsset cntry year
+
+foreach var of varlist lifesatisfaction-scalepoorrichnow_fac10 {
+ 
+	replace `var'=l.`var' if `var'==.
+ 
+ }
+
 save "Master Dataset.dta", replace
 
