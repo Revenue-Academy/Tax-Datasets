@@ -1,3 +1,9 @@
+Contents of this folder (explanations below):
+1) Master Dataset.dta
+2) raw data files
+3) Generating the Master Database.do
+4) Datasets and Years.xlsx
+
 The most important item in this folder is Master Dataset.dta, which contains data from
 multiple sources, consolidated into one file at the country-year level, 1990-2016.
 
@@ -5,8 +11,10 @@ This folder also contains all of the raw data files that were used to create the
 
 There is one dofile (called, Generating the Master Database.do), which extracts data from the raw files,
 cleans the data, reformats the data, and performs some minor manipulations before incorporating the
-data into the Master Dataset.
+data into the Master Dataset. To recreate the Master Dataset, simply download a zip file of this folder,
+and run the dofile with all other raw files in the same folder. This dofile will generate the master,
+as well as a number of intermediate .dta files, which can safely be deleted if undesirable.
 
-To recreate the Master Dataset, simply download a zip file of this folder, and run the dofile
-with all other raw files in the same folder. This dofile will generate the master, as well
-as a number of intermediate .dta files, which can safely be deleted if undesirable.
+Finally, this folder contains an excel file called "Datasets and Years.xlsx" which lists the 3rd-party
+databases included in the Master and the years for which they have data. Also included is an important
+list of assumptions.
