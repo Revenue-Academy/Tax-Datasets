@@ -1,0 +1,4 @@
+This folder contains datasets that are not broken into discrete Country-Year observations.
+Tax treaties, tax incentives, and Automatic Exchange of Information are bilateral
+relationships, while RA-FIT is composed of country groupings (minimum of 5 per region).
+GSMA data in this folder is for the entire region.
