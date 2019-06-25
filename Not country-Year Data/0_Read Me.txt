@@ -1,4 +1,5 @@
 This folder contains datasets that are not broken into discrete Country-Year observations.
 Tax treaties and Automatic Exchange of Information are bilateral relationships, 
-tax incentives are at the sector-year level, and both RA-FIT and GSMA data are at the
-regional level.
+tax incentives are at the sector-year level, both RA-FIT and GSMA data are at the
+regional level, and country-level PEFA scores come multiple times each year, or are at
+the local level.
