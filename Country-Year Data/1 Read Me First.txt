@@ -5,7 +5,7 @@ Contents of this folder (explanations below):
 4) Datasets and Years.xlsx
 
 The most important item in this folder is Master Dataset.dta, which contains data from
-multiple sources, consolidated into one file at the country-year level, 1990-2016.
+multiple sources, merged into one file at the country-year level, 1990-2016.
 
 This folder also contains all of the raw data files that were used to create the Master Dataset.
 
