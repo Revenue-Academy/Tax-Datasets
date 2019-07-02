@@ -11,21 +11,22 @@ set more off
 //Table of Contents
 //ICTD....................31
 //WDI.....................62
-//WB Enterprise Surveys...198
-//CPIA....................331
-//Tax Incentives..........432
-//Doing Business..........504
-//Afrobarometer...........660
-//Tax Treaties............979
-//PEFA....................1080
-//Polity IV Dataset.......1178
-//Digital Adoption Index..1237
-//GSMA (SSA only).........1264
-//FCVs....................2884
-//WGI.....................2910
-//IMF Public Debt.........2940
-//SSA ASPIRE..............2966
-//Latinbarometro..........3036
+//WB Enterprise Surveys...216
+//CPIA....................349
+//Tax Incentives..........450
+//Doing Business..........522
+//Afrobarometer...........678
+//Tax Treaties............997
+//PEFA....................1098
+//Polity IV Dataset.......1196
+//Digital Adoption Index..1255
+//GSMA (SSA only).........1282
+//FCVs....................2902
+//WGI.....................2928
+//IMF Public Debt.........2958
+//SSA ASPIRE..............2984
+//Latinbarometro..........3054
+//MIMIC informality.......4756
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -191,6 +192,24 @@ gen oil_rich=.
 replace oil_rich=1 if threeyearoil>=10 & threeyearoil<.
 replace oil_rich=0 if threeyearoil<10
 drop oil_tminus1 oil_tminus2 threeyearoil
+
+save "Master Dataset.dta", replace
+
+//GINI inequality
+
+import excel "WDI GINI.xlsx", firstrow cellrange(A1:E10851) clear
+rename CountryName Country
+rename CountryCode Country_Code
+rename Time year
+drop TimeCode
+rename GINI GINI
+
+save "WDI GINI.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "WDI GINI.dta"
+drop if _merge==2
+drop _merge
 
 save "Master Dataset.dta", replace
 
@@ -4733,3 +4752,55 @@ foreach var of varlist lifesatisfaction-scalepoorrichnow_fac10 {
 
 save "Master Dataset.dta", replace
 
+/****************************/
+/*****MIMIC Informality******/
+/****************************/
+
+import excel "MIMIC shadow economy figures 1991-2015 (scraped from IMF working paper, link inside).xlsx", firstrow cellrange(C1:AB159) clear
+
+rename D Shadow_Economy1991
+rename E Shadow_Economy1992
+rename F Shadow_Economy1993
+rename G Shadow_Economy1994
+rename H Shadow_Economy1995
+rename I Shadow_Economy1996
+rename J Shadow_Economy1997
+rename K Shadow_Economy1998
+rename L Shadow_Economy1999
+rename M Shadow_Economy2000
+rename N Shadow_Economy2001
+rename O Shadow_Economy2002
+rename P Shadow_Economy2003
+rename Q Shadow_Economy2004
+rename R Shadow_Economy2005
+rename S Shadow_Economy2006
+rename T Shadow_Economy2007
+rename U Shadow_Economy2008
+rename V Shadow_Economy2009
+rename W Shadow_Economy2010
+rename X Shadow_Economy2011
+rename Y Shadow_Economy2012
+rename Z Shadow_Economy2013
+rename AA Shadow_Economy2014
+rename AB Shadow_Economy2015
+
+reshape long Shadow_Economy, i(Country) j(year)
+
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Egypt, Arab Rep." if Country=="Egypt, Arab. Rep."
+replace Country="Iran, Islamic Rep." if Country=="Iran, Islam Rep."
+replace Country="Lao PDR" if Country=="Laos"
+replace Country="Netherlands" if Country=="Netherlands, The"
+replace Country="Syrian Arab Republic" if Country=="Syrian Arab. Rep."
+
+label var Shadow_Economy "[MIMIC] Informality calculations by IMF's Leandro Medina and Friedrich Schneider"
+
+save "MIMIC Informality.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "MIMIC Informality.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
