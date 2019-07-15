@@ -9,24 +9,25 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD....................31
-//WDI.....................62
-//WB Enterprise Surveys...216
-//CPIA....................349
-//Tax Incentives..........450
-//Doing Business..........522
-//Afrobarometer...........678
-//Tax Treaties............997
-//PEFA....................1098
-//Polity IV Dataset.......1196
-//Digital Adoption Index..1255
-//GSMA (SSA only).........1282
-//FCVs....................2902
-//WGI.....................2928
-//IMF Public Debt.........2958
-//SSA ASPIRE..............2984
-//Latinbarometro..........3054
-//MIMIC informality.......4756
+//ICTD......................33
+//WDI.......................64
+//WB Enterprise Surveys....218
+//CPIA.....................351
+//Tax Incentives...........452
+//Doing Business...........524
+//Afrobarometer............680
+//Tax Treaties.............999
+//PEFA....................1100
+//Polity IV Dataset.......1198
+//Digital Adoption Index..1257
+//GSMA (SSA only).........1284
+//FCVs....................2905
+//WGI.....................2930
+//IMF Public Debt.........2960
+//SSA ASPIRE..............2986
+//Latinbarometro..........3056
+//MIMIC informality.......4758
+//WWBI....................4809
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -4800,6 +4801,48 @@ save "MIMIC Informality.dta", replace
 
 use "Master Dataset.dta", clear
 merge m:1 Country year using "MIMIC Informality.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/**************************************/
+/***Worldwide Bureaucracy Indicators***/
+/**************************************/
+
+import excel "WWBIEXCEL.xlsx", sheet("Data") firstrow clear
+
+rename (E-U) (yr2000 yr2001 yr2002 yr2003 yr2004 yr2005 yr2006 yr2007 yr2008 ///
+  yr2009 yr2010 yr2011 yr2012 yr2013 yr2014 yr2015 yr2016)
+  
+reshape long yr, i(CountryName IndicatorName) j(year)
+
+rename yr value
+keep if IndicatorName=="Wage bill as a percentage of Public Expenditure" | ///
+ IndicatorName=="Wage bill as a percentage of GDP"
+ 
+drop if value==.
+gen value2=value if IndicatorName=="Wage bill as a percentage of GDP"
+replace value=. if IndicatorName=="Wage bill as a percentage of GDP"
+
+rename value2 WageBill_GDP
+rename value WageBill_PubExp
+
+collapse (firstnm) WageBill_PubExp WageBill_GDP, by(CountryName year)
+
+rename CountryName Country
+
+foreach v of varlist WageBill_PubExp WageBill_GDP{
+
+	local x = "[WWBI] " + "`v'"
+	label var `v' "`x'"
+	
+}
+
+save "WWBI public sector wage bill.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "WWBI public sector wage bill.dta"
 drop if _merge==2
 drop _merge
 
