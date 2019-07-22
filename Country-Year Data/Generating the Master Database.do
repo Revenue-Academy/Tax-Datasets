@@ -1103,7 +1103,7 @@ save "Master Dataset.dta", replace
 
 clear all
 set more off
-cd "D:\WB Tax Consultancy\Country-Year Temp\STC-Dataset-Building-master\Country-Year Data"
+
 import excel "PEFA Scores with Numeric values-Dec18-N-ALL-PEFA2011.xlsx", sheet("Numeric Values") cellrange(A2:LV105) clear
 
 *the PEFA database is organized such that variables are rows and countries are columns. sxpose switches them for use in Stata.
