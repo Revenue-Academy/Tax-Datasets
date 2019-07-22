@@ -9,25 +9,26 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD......................33
-//WDI.......................64
-//WB Enterprise Surveys....218
-//CPIA.....................351
-//Tax Incentives...........452
-//Doing Business...........524
-//Afrobarometer............680
-//Tax Treaties.............999
-//PEFA....................1100
-//Polity IV Dataset.......1198
-//Digital Adoption Index..1257
-//GSMA (SSA only).........1284
-//FCVs....................2905
-//WGI.....................2930
-//IMF Public Debt.........2960
-//SSA ASPIRE..............2986
-//Latinbarometro..........3056
-//MIMIC informality.......4758
-//WWBI....................4809
+//ICTD......................34
+//WDI.......................65
+//WB Enterprise Surveys....219
+//CPIA.....................352
+//Tax Incentives...........453
+//Doing Business...........525
+//Afrobarometer............681
+//Tax Treaties.............1000
+//PEFA....................1101
+//Polity IV Dataset.......1197
+//Digital Adoption Index..1256
+//GSMA (SSA only).........1283
+//FCVs....................2904
+//WGI.....................2929
+//IMF Public Debt.........2959
+//SSA ASPIRE..............2985
+//Latinbarometro..........3055
+//MIMIC informality.......4757
+//WWBI....................4808
+//IMF Commodity Prices....4851
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -1102,7 +1103,7 @@ save "Master Dataset.dta", replace
 
 clear all
 set more off
-
+cd "D:\WB Tax Consultancy\Country-Year Temp\STC-Dataset-Building-master\Country-Year Data"
 import excel "PEFA Scores with Numeric values-Dec18-N-ALL-PEFA2011.xlsx", sheet("Numeric Values") cellrange(A2:LV105) clear
 
 *the PEFA database is organized such that variables are rows and countries are columns. sxpose switches them for use in Stata.
@@ -1115,6 +1116,15 @@ foreach var of varlist _var5-_var104 {
 	label variable `var' "`=`var'[1]'"
 }
 drop if _var5=="Aggregate expenditure out-turn compared to original approved budget"
+
+//extracting dates from strings in various formats
+egen Date2 = sieve(Date), keep(numeric)
+replace Date2=usubstr(Date2,-2,2) if strlen(Date2)==2
+replace Date2=usubstr(Date2,-4,2) if strlen(Date2)>2
+destring Date2, replace
+replace Date2 = Date2 + 2000
+drop Date
+rename Date2 year
 
 *Turn values coded as string into numeric*
 destring _var5-_var104, replace
@@ -1143,9 +1153,7 @@ rename _var102 D2_1
 rename _var103 D2_2
 rename _var104 D3_0
 
-gen year=2011
-
-drop Date Lastupdate
+drop Lastupdate
 
 foreach v of varlist _all{
 	local u: variable label `v'
@@ -1155,22 +1163,21 @@ foreach v of varlist _all{
 label var year "year"
 label var Country "country"
 
-replace Country="Bosnia and Herzegovina" if Country=="Bosnia & Herzegovina-BiH" | Country=="Bosnia & Herzegovina-DB" | Country=="Bosnia & Herzegovina-FBiH" | Country=="Bosnia & Herzegovina-RS"
+drop if Country=="Bosnia & Herzegovina-BiH" | Country=="Bosnia & Herzegovina-DB" | Country=="Bosnia & Herzegovina-RS"
+replace Country="Bosnia and Herzegovina" if Country=="Bosnia & Herzegovina-FBiH"
 replace Country="Cape Verde" if Country=="Cabo Verde"
 replace Country="Congo, Dem. Rep." if Country=="Congo, Dem. Rep. of"
-replace Country="Congo, Rep." if Country=="Congo, Rep."
 replace Country="Egypt, Arab Rep." if Country=="Egypt"
-
-//the PEFA dataset must be "collapsed" to produce average scores for countries
-//with more than one observation per year
-//the collapse command deletes variable labels, so they must be reapplied
-foreach v of var PI* D* {
-	local l`v' : variable label `v'
-}
-collapse PI* D*, by(Country year)
-foreach v of var PI* D* {
-	label var `v' "`l`v''"
-}
+replace Country="Antigua and Barbuda" if Country=="Antigua & Barbuda"
+replace Country="Aruba" if Country=="Aruba (Neth.)"
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Congo, Rep." if Country=="Congo, Republic of"
+replace Country="Fiji" if Country=="Fiji Islands"
+replace Country="Guinea-Bissau" if Country=="Guinea Bissau"
+replace Country="Macedonia, FYR" if Country=="Macedonia"
+replace Country="Morocco" if Country=="Morrocco"
+replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="Yemen, Rep." if Country=="Yemen"
 
 //stripping the variables down to a few key, tax-related variables
 keep Country year PI_13_1 PI_13_2 PI_13_3 PI_14_1 PI_14_2 PI_14_3 PI_15_1 PI_15_2 PI_15_3
@@ -1181,14 +1188,6 @@ use "Master Dataset.dta", clear
 merge m:1 Country year using "PEFA 2011.dta"
 drop if _merge==2
 drop _merge
-
-/*Expanding PEFA to subsequent years*/
-tsset cntry year
-foreach v in PI_13_1 PI_13_2 PI_13_3 PI_14_1 PI_14_2 PI_14_3 PI_15_1 PI_15_2 PI_15_3{ 
-
-bysort cntry: replace `v'=l.`v' if l.`v'!=. & `v'==.
-
-} 
 
 sort Country year
 
@@ -4844,6 +4843,44 @@ save "WWBI public sector wage bill.dta", replace
 use "Master Dataset.dta", clear
 merge m:1 Country year using "WWBI public sector wage bill.dta"
 drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/**************************/
+/***IMF Commodity Prices***/
+/**************************/
+
+import delimited "PCPS_07-02-2019 14-49-20-61_panel.csv", clear 
+drop countrycode unitname unitcode ïcountryname
+
+//We will remove the quarterly and monthly data to merge with the
+//country-year level Master Dataset, but in order to do this we have
+//to select the rows that are just year-level summaries, which has
+//to be done the following way, since the year variable is a string.
+local yearcounter=1990
+gen keepthisrow=0
+while `yearcounter'<=2016 {
+	replace keepthisrow=1 if year=="`yearcounter'"
+	local yearcounter = `yearcounter' + 1
+}
+keep if keepthisrow==1
+drop keepthisrow
+//Now that those pesky Q's and M's are out of the way...
+destring year, replace
+
+//label the variables to show where they came from
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[Primary Commodity Price System] " + "`u'"
+	label var `v' "`x'"
+}
+
+save "Commodity Prices.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 year using "Commodity Prices.dta"
+sort Country year
 drop _merge
 
 save "Master Dataset.dta", replace
