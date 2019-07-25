@@ -9,46 +9,56 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD......................34
-//WDI.......................65
-//WB Enterprise Surveys....219
-//CPIA.....................352
-//Tax Incentives...........453
-//Doing Business...........525
-//Afrobarometer............681
-//Tax Treaties.............1000
-//PEFA....................1101
-//Polity IV Dataset.......1197
-//Digital Adoption Index..1256
-//GSMA (SSA only).........1283
-//FCVs....................2904
-//WGI.....................2929
-//IMF Public Debt.........2959
-//SSA ASPIRE..............2985
-//Latinbarometro..........3055
-//MIMIC informality.......4757
-//WWBI....................4808
-//IMF Commodity Prices....4851
+//ICTD......................35
+//WDI.......................75
+//WB Enterprise Surveys....229
+//CPIA.....................363
+//Tax Incentives...........464
+//Doing Business...........536
+//Afrobarometer............697
+//Tax Treaties............1017
+//PEFA....................1118
+//Polity IV Dataset.......1216
+//Digital Adoption Index..1280
+//GSMA (SSA only).........1308
+//FCVs....................2923
+//WGI.....................2949
+//IMF Public Debt.........2979
+//SSA ASPIRE..............3021
+//Latinbarometro..........3091
+//MIMIC informality.......4792
+//WWBI....................4845
+//IMF Commodity Prices....4890
+//Income Levels...........4928
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
 /**********************************/
 
-//add source data to Sebastian's work
+//add source data and missing countries to Sebastian's work
 import excel "Gov Rev Dataset.xlsx", sheet("work") firstrow cellrange(A1:H7251) clear
 
 rename Source gov_data_source
 rename ISO Country_Code
 rename Year year
-drop Identifier Country Reg Inc
 destring year, replace
+//save a few mismatched ISO codes
+replace Country_Code="TLS" if Country=="Timor-Leste"
+replace Country_Code="XKX" if Country=="Kosovo"
+replace Country_Code="PSE" if Country=="West Bank and Gaza"
+drop Identifier Country Reg Inc
 
 save "ICTD metadata.dta", replace
 
 use "Augmented Tax Dataset after Sebastian's dofiles.dta", clear
+//adding a few missing countries (Nauru, Timor-Leste, West Bank and Gaza, and Kosovo).
+//this file contains relevant ICTD data already
+append using "toAppend.dta"
 merge m:1 Country_Code year using "ICTD metadata.dta"
 drop if _merge==2
-drop _merge
+drop _merge cntry
+//create new panel data identifier for appended dataset
+encode Country_Code, gen(cntry)
 
 foreach v of varlist _all{
 	local u: variable label `v'
@@ -285,6 +295,7 @@ replace Country="Cape Verde" if Country=="Cabo Verde"
 replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
 replace Country="Guyana" if Country=="Guyana, CR"
 replace Country="Venezuela, RB" if Country=="Venezuela, R.B."
+replace Country="Swaziland" if Country=="Eswatini"
 
 save "World Bank Enterprise Surveys.dta", replace
 
@@ -667,11 +678,16 @@ foreach v of varlist _all{
 label var year "year"
 label var Country "country"
 label var Country_Code "code"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
 
 save "Doing Business Historical - Paying Taxes.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Doing Business Historical - Paying Taxes.dta"
+merge m:1 Country year using "Doing Business Historical - Paying Taxes.dta"
 drop if _merge==2
 drop _merge
 
@@ -960,6 +976,7 @@ label var year "year"
 decode country, gen(Country)
 drop country
 replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
 
 save "Afrobaro_merged.dta", replace
 
@@ -1178,6 +1195,8 @@ replace Country="Macedonia, FYR" if Country=="Macedonia"
 replace Country="Morocco" if Country=="Morrocco"
 replace Country="Syrian Arab Republic" if Country=="Syria"
 replace Country="Yemen, Rep." if Country=="Yemen"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Timor-Leste" if Country=="Timor Leste"
 
 //stripping the variables down to a few key, tax-related variables
 keep Country year PI_13_1 PI_13_2 PI_13_3 PI_14_1 PI_14_2 PI_14_3 PI_15_1 PI_15_2 PI_15_3
@@ -2912,6 +2931,7 @@ replace Country="Lao PDR" if Country=="Lao, PDR"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia, FS"
 replace Country="Syrian Arab Republic" if Country=="Syria"
 replace Country="Yemen, Rep." if Country=="Yemen"
+replace Country="Venezuela, RB" if Country=="Venezuela"
 
 save "FCV.dta", replace
 
@@ -2969,6 +2989,22 @@ replace Country="Egypt, Arab Rep." if Country=="Egypt"
 replace Country="Syrian Arab Republic" if Country=="Syria"
 replace Country="Yemen, Rep." if Country=="Yemen"
 replace Country="Iran, Islamic Rep." if Country=="Iran"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="China" if Country=="China, People's Republic of"
+replace Country="Congo, Dem. Rep." if Country=="Congo, Dem. Rep. of the"
+replace Country="Congo, Rep." if Country=="Congo, Republic of "
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong SAR"
+replace Country="Korea, Rep." if Country=="Lao P.D.R."
+replace Country="Lao PDR" if Country=="Korea, Republic of"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia, Fed. States of"
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="South Sudan" if Country=="South Sudan, Republic of"
+replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
+replace Country="Venezuela, RB" if Country=="Venezuela"
 
 save "IMF Central Government Debt.dta", replace
 
@@ -4837,6 +4873,9 @@ foreach v of varlist WageBill_PubExp WageBill_GDP{
 	label var `v' "`x'"
 	
 }
+replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Sao Tome and Principe" if Country=="São Tomé and Principe"
+
 
 save "WWBI public sector wage bill.dta", replace
 
@@ -4883,4 +4922,37 @@ merge m:1 year using "Commodity Prices.dta"
 sort Country year
 drop _merge
 
+save "Master Dataset.dta", replace
+
+/*************************/
+/******Income Levels******/
+/*************************/
+
+import excel "OGHIST.xls", sheet("Country Analytical History") cellrange(A6:AF229) clear
+drop B C D E
+
+foreach var of varlist _all {
+	replace `var'="" if `var'==".."
+}
+drop if F=="<= 610" | F=="611-2,465" | F=="2,466-7,620" | F=="> 7,620" | ///
+	(A=="" & F=="")
+foreach var of varlist _all {
+	rename `var' Incomelevel`=`var'[1]'
+}
+drop if Incomelevel==""
+rename Incomelevel Country_Code
+reshape long Incomelevel, i(Country_Code) j(year)
+replace Incomelevel="Low Income" if Incomelevel=="L"
+replace Incomelevel="Lower Middle Income" if Incomelevel=="LM"
+replace Incomelevel="Upper Middle Income" if Incomelevel=="UM"
+replace Incomelevel="High Income" if Incomelevel=="H"
+
+save "Income Classifications.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "Income Classifications.dta"
+drop if _merge==2
+drop _merge
+
+sort Country year
 save "Master Dataset.dta", replace
