@@ -9,27 +9,27 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD......................35
-//WDI.......................75
-//WB Enterprise Surveys....229
-//CPIA.....................363
-//Tax Incentives...........464
-//Doing Business...........536
-//Afrobarometer............697
-//Tax Treaties............1017
-//PEFA....................1118
-//Polity IV Dataset.......1216
-//Digital Adoption Index..1280
-//GSMA (SSA only).........1308
-//FCVs....................2923
-//WGI.....................2949
-//IMF Public Debt.........2979
-//SSA ASPIRE..............3021
-//Latinbarometro..........3091
-//MIMIC informality.......4792
-//WWBI....................4845
-//IMF Commodity Prices....4890
-//Income Levels...........4928
+//ICTD.......................35
+//WDI........................66
+//WB Enterprise Surveys.....220
+//CPIA......................353
+//Tax Incentives............454
+//Doing Business............526
+//Afrobarometer.............682
+//Tax Treaties.............1001
+//PEFA.....................1102
+//Polity IV Dataset........1200
+//Digital Adoption Index...1259
+//GSMA (SSA only)..........1286
+//FCVs.....................2907
+//WGI......................2932
+//IMF Public Debt..........2962
+//SSA ASPIRE...............2988
+//Latinbarometro...........3058
+//MIMIC informality........4760
+//WWBI.....................4811
+//Income Levels............4928
+//ES Bribery Incidence.....4961
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -4955,4 +4955,38 @@ drop if _merge==2
 drop _merge
 
 sort Country year
+save "Master Dataset.dta", replace
+
+/******************************************/
+/***ENTERPRISE SURVEYS BRIBERY INCIDENCE***/
+/******************************************/
+
+import excel "C:\Users\WB542385\Documents\GGOGT STC\Master Dataset\Country-Year Data\Enterprise Surveys Bribery Incidence.xlsx", ///
+ sheet("Data") firstrow clear
+
+rename (SeriesName CountryName CountryCode) (BriberyIncidence Country Country_Code)
+
+drop SeriesCode
+drop in 222
+drop in 221
+drop in 220
+drop in 219
+drop in 218
+
+reshape long YR, i(Country) j(year)
+
+drop BriberyIncidence
+rename YR BriberyIncidence
+lab var BriberyIncidence "[Enterprise Surveys] % of firms experiencing at least one bribe payment request"
+
+replace BriberyIncidence="" if BriberyIncidence==".."
+destring BriberyIncidence, replace
+
+save "Enterprise Surveys Bribery Incidence.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "Enterprise Surveys Bribery Incidence.dta"
+drop if _merge==2
+drop _merge
+
 save "Master Dataset.dta", replace
