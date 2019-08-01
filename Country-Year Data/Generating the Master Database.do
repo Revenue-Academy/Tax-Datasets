@@ -9,30 +9,31 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD........................38
-//WDI.........................78
-//WB Enterprise Surveys......232
-//CPIA.......................366
-//Tax Incentives.............467
-//Doing Business.............539
-//Afrobarometer..............700
-//Tax Treaties..............1020
-//PEFA......................1121
-//Polity IV Dataset.........1219
-//Digital Adoption Index....1283
-//GSMA (SSA only)...........1311
-//FCVs......................2946
-//WGI.......................2972
-//IMF Public Debt...........3003
-//SSA ASPIRE................3044
-//Latinbarometro............3114
-//MIMIC informality.........4815
-//WWBI......................4868
-//IMF Commodity Prices......4913
-//Income Levels.............4951
-//ES Bribery Incidence......4984
-//OECD air pollution........5018
-//Trimming extra variables..5053
+//ICTD........................39
+//WDI.........................79
+//WB Enterprise Surveys......233
+//CPIA.......................367
+//Tax Incentives.............468
+//Doing Business.............540
+//Afrobarometer..............701
+//Tax Treaties..............1021
+//PEFA......................1122
+//Polity IV Dataset.........1220
+//Digital Adoption Index....1284
+//GSMA (SSA only)...........1312
+//FCVs......................2947
+//WGI.......................2973
+//IMF Public Debt...........3004
+//SSA ASPIRE................3045
+//Latinbarometro............3115
+//MIMIC informality.........4816
+//WWBI......................4869
+//IMF Commodity Prices......4914
+//Income Levels.............4952
+//ES Bribery Incidence......4985
+//OECD air pollution........5019
+//WDI Climate Change........5054
+//Trimming extra Variables..5120
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5049,6 +5050,72 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+/************************/
+/***WDI CLIMATE CHANGE***/
+/************************/
+
+import excel "C:\Users\WB542385\Documents\GGOGT STC\Master Dataset\Country-Year Data\Data_Extract_From_World_Development_Indicators - environment and climate change.xlsx", ///
+ sheet("Data") firstrow clear
+
+drop YR1969-YR1989 YR2017 YR2018
+drop SeriesCode
+
+foreach v of varlist YR1990-YR2016 {
+
+	replace `v'="" if `v'==".."
+	destring `v', replace
+
+}
+
+drop if CountryCode==""
+
+reshape long YR, i(CountryName SeriesName) j(year)
+rename YR Score
+
+encode SeriesName, gen(seriesnum)
+tab seriesnum
+drop SeriesName
+
+reshape wide Score, i(CountryName year) j(seriesnum)
+
+label var Score1 "[WDI Climate Change] Agricultural land (% of land area)"
+label var Score2 "[WDI Climate Change] Arable land (% of land area)"
+label var Score3 "[WDI Climate Change] Average precipitation in depth (mm per year)"
+label var Score4 "[WDI Climate Change] Cereal production (metric tons)"
+label var Score5 "[WDI Climate Change] Cereal yield (kg per hectare)"
+label var Score6 "[WDI Climate Change] Electric power consumption (kWh per capita)"
+label var Score7 "[WDI Climate Change] Electricity production from coal sources (% of total)"
+label var Score8 "[WDI Climate Change] Electricity production from hydroelectric sources (% of total)"
+label var Score9 "[WDI Climate Change] Electricity production from natural gas sources (% of total)"
+label var Score10 "[WDI Climate Change] Electricity production from nuclear sources (% of total)"
+label var Score11 "[WDI Climate Change] Electricity production from oil, gas and coal sources (% of total)"
+label var Score12 "[WDI Climate Change] Forest area (% of land area)"
+label var Score13 "[WDI Climate Change] Land area where elevation is below 5 meters (% of total land area)"
+label var Score14 "[WDI Climate Change] Renewable electricity output (% of total electricity output)"
+label var Score15 "[WDI Climate Change] Rural land area where elevation is below 5 meters (% of total land area)"
+label var Score16 "[WDI Climate Change] Total greenhouse gas emissions (% change from 1990)"
+label var Score17 "[WDI Climate Change] Total greenhouse gas emissions (kt of CO2 equivalent)"
+label var Score18 "[WDI Climate Change] Urban land area where elevation is below 5 meters (% of total land area)"
+
+rename (Score1-Score18 CountryName) (agriculturalland arableland precipitationavg ///
+ cerealprod cerealyield elecpowerconsumption elecprodcoal elecprodhydro elecprodnatgas ///
+ elecprodnuclear elecprodoilgascoal forestland landbelow5m elecprodrenewable ///
+ ruralandbelow5m GHGemissionpctchange GHGemissiontotal urbanlandbelow5m Country)
+ 
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Macedonia, FYR" if Country=="North Macedonia"
+
+save "WDI Climate Change.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "WDI Climate Change.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
@@ -5065,7 +5132,7 @@ drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
  buoy_cnt_Tax_Revenue_gt_1 buoy_cnt_Income_Taxes_gt_1 buoy_cnt_Property_Tax_gt_1 ///
  buoy_cnt_Value_Added_Tax_gt_1 buoy_cnt_Excise_Taxes_gt_1 ///
  buoy_cnt_Trade_Taxes_gt_1 tot_yrs Country_ID country ranktaxes19 scoretaxes1719 ///
- round why_avoid_tax
+ round why_avoid_tax CountryCode
  
 save "Master Dataset.dta", replace
  
