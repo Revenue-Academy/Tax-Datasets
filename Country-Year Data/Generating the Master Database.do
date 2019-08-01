@@ -4985,7 +4985,7 @@ save "Master Dataset.dta", replace
 /***ENTERPRISE SURVEYS BRIBERY INCIDENCE***/
 /******************************************/
 
-import excel "C:\Users\WB542385\Documents\GGOGT STC\Master Dataset\Country-Year Data\Enterprise Surveys Bribery Incidence.xlsx", ///
+import excel "Enterprise Surveys Bribery Incidence.xlsx", ///
  sheet("Data") firstrow clear
 
 rename (SeriesName CountryName CountryCode) (BriberyIncidence Country Country_Code)
@@ -5054,7 +5054,7 @@ save "Master Dataset.dta", replace
 /***WDI CLIMATE CHANGE***/
 /************************/
 
-import excel "C:\Users\WB542385\Documents\GGOGT STC\Master Dataset\Country-Year Data\Data_Extract_From_World_Development_Indicators - environment and climate change.xlsx", ///
+import excel "Data_Extract_From_World_Development_Indicators - environment and climate change.xlsx", ///
  sheet("Data") firstrow clear
 
 drop YR1969-YR1989 YR2017 YR2018
