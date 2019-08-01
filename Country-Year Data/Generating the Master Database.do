@@ -9,28 +9,29 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD......................36
-//WDI.......................76
-//WB Enterprise Surveys....230
-//CPIA.....................364
-//Tax Incentives...........465
-//Doing Business...........537
-//Afrobarometer............698
-//Tax Treaties............1018
-//PEFA....................1119
-//Polity IV Dataset.......1217
-//Digital Adoption Index..1281
-//GSMA (SSA only).........1309
-//FCVs....................2924
-//WGI.....................2950
-//IMF Public Debt.........2980
-//SSA ASPIRE..............3022
-//Latinbarometro..........3092
-//MIMIC informality.......4793
-//WWBI....................4846
-//IMF Commodity Prices....4891
-//Income Levels...........4929
-//ES Bribery Incidence....4961
+//ICTD........................37
+//WDI.........................77
+//WB Enterprise Surveys......231
+//CPIA.......................365
+//Tax Incentives.............466
+//Doing Business.............538
+//Afrobarometer..............699
+//Tax Treaties..............1019
+//PEFA......................1120
+//Polity IV Dataset.........1218
+//Digital Adoption Index....1282
+//GSMA (SSA only)...........1310
+//FCVs......................2945
+//WGI.......................2971
+//IMF Public Debt...........3002
+//SSA ASPIRE................3043
+//Latinbarometro............3113
+//MIMIC informality.........4814
+//WWBI......................4867
+//IMF Commodity Prices......4912
+//Income Levels.............4950
+//ES Bribery Incidence......4983
+//Trimming extra variables..5017
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -2901,6 +2902,26 @@ append using "GSMA `u' Dataset.dta"
 order Country year gsmaReg, first
 sort Country year
 
+label var connectionstotaliot "Total number of connections, including IoT"
+label var connectionstotal "Total number of connections, excluding IoT"
+label var connectionsprepaid "Total number of connections - prepaid"
+label var connectionscontract "Total number of connections - contract"
+label var connections2g "Total number of connections - 2g"
+label var connections3g "Total number of connections - 3g"
+label var connections4g "Total number of connections - 4g"
+label var connectionsmobbrd "Total number of connections - mobile broadband"
+label var connectionssmrtphone "Total number of connections - smartphone"
+label var connectionsbasic "Total number of connections - basic only"
+label var connectionsdataonly "Total number of connections - data only"
+label var connectionsgsm "Total number of connections - GSM"
+label var connectionswcdma "Total number of connections - WCDMA"
+label var connectionslte "Total number of connections - LTE"
+label var connectionsliot "Total number of connections - Licensed IoT"
+label var connectionsm2m "Total number of connections - Cellular M2M"
+label var connectionscdma2g "Total number of connections - CDMA2G"
+label var connectionscdma2000 "Total number of connections - CDMA2000"
+label var connectionslpwa "Total number of connections - LPWA"
+
 foreach v of varlist _all{
 	local u: variable label `v'
 	local x = "[GSMA 2018] " + "`u'"
@@ -4990,4 +5011,24 @@ merge m:1 Country_Code year using "Enterprise Surveys Bribery Incidence.dta"
 drop if _merge==2
 drop _merge
 
+save "Master Dataset.dta", replace
+
+/******************************/
+/***TRIMMING EXTRA VARIABLES***/
+/******************************/
+
+drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
+ Total_Revenue_incl_SC_99 Total_Revenue_incl_SC_01 Income_Taxes_99 ///
+ Income_Taxes_01 Value_Added_Tax_99 Value_Added_Tax_01 Excise_Taxes_99 ///
+ Excise_Taxes_01 Trade_Taxes_99 Trade_Taxes_01 wbregionyr meantax2 oil_gasyr /// 
+ meantax4 Region_Code1 wbregion1yr meantax3 Oil_Gas_Rich1 oil_gas1yr meantax5 ///
+ meantax meantaxIncome_Taxes meantaxcorp meantaxindv meantaxpropr meantaxvat ///
+ meantaxexcises meantaxtrade meantaxother_tax Region_Code2 wbregion2yr ///
+ meantaxinc2 meantaxpropr2 meantaxvat2 meantaxexcises2 meantaxtrade2 ///
+ meantaxother_tax2 Tax_Revenue_99 Tax_Revenue_01 buoy_cnt_Tax_Rev_incl_SC_gt_1 ///
+ buoy_cnt_Tax_Revenue_gt_1 buoy_cnt_Income_Taxes_gt_1 buoy_cnt_Property_Tax_gt_1 ///
+ buoy_cnt_Value_Added_Tax_gt_1 buoy_cnt_Excise_Taxes_gt_1 ///
+ buoy_cnt_Trade_Taxes_gt_1 tot_yrs Country_ID country ranktaxes19 scoretaxes1719 ///
+ round why_avoid_tax
+ 
 save "Master Dataset.dta", replace
