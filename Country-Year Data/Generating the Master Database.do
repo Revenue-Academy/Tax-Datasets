@@ -9,29 +9,30 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD........................37
-//WDI.........................77
-//WB Enterprise Surveys......231
-//CPIA.......................365
-//Tax Incentives.............466
-//Doing Business.............538
-//Afrobarometer..............699
-//Tax Treaties..............1019
-//PEFA......................1120
-//Polity IV Dataset.........1218
-//Digital Adoption Index....1282
-//GSMA (SSA only)...........1310
-//FCVs......................2945
-//WGI.......................2971
-//IMF Public Debt...........3002
-//SSA ASPIRE................3043
-//Latinbarometro............3113
-//MIMIC informality.........4814
-//WWBI......................4867
-//IMF Commodity Prices......4912
-//Income Levels.............4950
-//ES Bribery Incidence......4983
-//Trimming extra variables..5017
+//ICTD........................38
+//WDI.........................78
+//WB Enterprise Surveys......232
+//CPIA.......................366
+//Tax Incentives.............467
+//Doing Business.............539
+//Afrobarometer..............700
+//Tax Treaties..............1020
+//PEFA......................1121
+//Polity IV Dataset.........1219
+//Digital Adoption Index....1283
+//GSMA (SSA only)...........1311
+//FCVs......................2946
+//WGI.......................2972
+//IMF Public Debt...........3003
+//SSA ASPIRE................3044
+//Latinbarometro............3114
+//MIMIC informality.........4815
+//WWBI......................4868
+//IMF Commodity Prices......4913
+//Income Levels.............4951
+//ES Bribery Incidence......4984
+//OECD air pollution........5018
+//Trimming extra variables..5053
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5013,6 +5014,41 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+/************************/
+/***OECD AIR EMISSIONS***/
+/************************/
+
+import delimited "DP_LIVE_01082019180609023.csv", clear
+
+rename ïlocation Country_Code
+rename time year
+keep if year>=1990
+keep Country_Code subject year measure value
+keep if measure=="TONNE_CAP" | measure=="KG_CAP"
+drop if value==.
+
+reshape wide value measure, i(Country_Code year) j(subject, string)
+label var valueCO "[OECD] Kilograms per capita of CO air emissions"
+label var valueCO2 "[OECD] Tonnes per capita of CO2 air emissions"
+label var valueGHG "[OECD] Tonnes per capita of Greenhouse Gas emissions"
+label var valueNOX "[OECD] Kilograms per capita of Nitrogen Oxide emissions"
+label var valueSOX "[OECD] Kilograms per capita of Sulfur Oxide emissions"
+label var valueVOC "[OECD] Kilograms per capita of Volatile Organic Compound emissions"
+
+drop measureCO measureCO2 measureGHG measureNOX measureSOX measureVOC
+
+drop if Country_Code=="WLD" | Country_Code=="EU28" | Country_Code=="OECDE" | ///
+ Country_Code=="OECD"
+ 
+save "OECD air emissions.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "OECD air emissions.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
@@ -5032,3 +5068,4 @@ drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
  round why_avoid_tax
  
 save "Master Dataset.dta", replace
+ 
