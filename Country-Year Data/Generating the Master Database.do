@@ -5343,7 +5343,7 @@ save "Master Dataset.dta", replace
 /***FINSTATS 2019***/
 /*******************/
 
-import excel "C:FinStats Database.xlsx", sheet("Indicator data") firstrow clear
+import excel "FinStats Database.xlsx", sheet("Indicator data") firstrow clear
 
 drop Region Incomegroup
 rename (Countryname Year) (Country_Code year)
