@@ -9,31 +9,35 @@ set more off
 //Sebastian's data.
 
 //Table of Contents
-//ICTD........................39
-//WDI.........................79
-//WB Enterprise Surveys......233
-//CPIA.......................367
-//Tax Incentives.............468
-//Doing Business.............540
-//Afrobarometer..............701
-//Tax Treaties..............1021
-//PEFA......................1122
-//Polity IV Dataset.........1220
-//Digital Adoption Index....1284
-//GSMA (SSA only)...........1312
-//FCVs......................2947
-//WGI.......................2973
-//IMF Public Debt...........3004
-//SSA ASPIRE................3045
-//Latinbarometro............3115
-//MIMIC informality.........4816
-//WWBI......................4869
-//IMF Commodity Prices......4914
-//Income Levels.............4952
-//ES Bribery Incidence......4985
-//OECD air pollution........5019
-//WDI Climate Change........5054
-//Trimming extra Variables..5120
+//ICTD........................43
+//WDI.........................83
+//WB Enterprise Surveys......237
+//CPIA.......................371
+//Tax Incentives.............472
+//Doing Business.............544
+//Afrobarometer..............705
+//Tax Treaties..............1025
+//PEFA......................1126
+//Polity IV Dataset.........1224
+//Digital Adoption Index....1288
+//GSMA (SSA only)...........1316
+//FCVs......................2951
+//WGI.......................2977
+//IMF Public Debt...........3008
+//SSA ASPIRE................3049
+//Latinbarometro............3119
+//MIMIC informality.........4820
+//WWBI......................4873
+//IMF Commodity Prices......4918
+//Income Levels.............4956
+//ES Bribery Incidence......4989
+//OECD air pollution........5023
+//WDI Climate Change........5058
+//Fiscal Space..............5124
+//UNCTAD ICT................5164
+//WDI Customs...............5211
+//UNCTAD Tariff.............5244
+//Trimming extra Variables..5342
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5111,6 +5115,224 @@ save "WDI Climate Change.dta", replace
 
 use "Master Dataset.dta", clear
 merge m:1 Country year using "WDI Climate Change.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/*********************************************/
+/***Cross-Country Database of Fiscal Policy***/
+/*********************************************/
+
+use "fs_data_pub.dta", clear
+
+rename country Country
+keep Country year ggdy pby cby fby dfggd dffb fxsovsh secnres fordebtsh concggd ///
+ avglife debtduey xtdebty fxdebtall prdebty pscy stdebtall stdebtres xtdebtres ///
+ xtdebtrxg cds5y sovrate
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[Fiscal Space] " + "`u'"
+	label var `v' "`x'"
+}
+
+replace Country="Antigua and Barbuda" if Country=="Antigua & Barbuda"
+replace Country="Bosnia and Herzegovina" if Country=="Bosnia & Herzegovina"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Macedonia, FYR" if Country=="North Macedonia"
+replace Country="Central African Republic" if Country=="Central African Rep."
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia, Fed. States"
+replace Country="Sao Tome and Principe" if Country=="Sao Tome & Principe"
+replace Country="St. Kitts and Nevis" if Country=="St. Kitts & Nevis"
+replace Country="St. Vincent and the Grenadines" if Country=="St. Vincent & the Grenadines"
+replace Country="Trinidad and Tobago" if Country=="Trinidad & Tobago"
+replace Country="West Bank and Gaza" if Country=="West Bank & Gaza"
+
+save "Fiscal Space Data.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "Fiscal Space Data.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/***********************/
+/***UNCTAD ICT SECTOR***/
+/***********************/
+
+import delimited us_ictproductionsector_06320563693489.csv, clear
+
+foreach v of varlist v3-v13 {
+
+	replace `v'="" if `v'==".."
+	destring `v', replace
+
+}
+
+rename (v1-v13) (Country indicator yr2002 yr2003 yr2004 yr2005 yr2006 yr2007 ///
+ yr2008 yr2009 yr2010 yr2011 yr2012)
+ 
+drop in 1
+drop in 1
+
+reshape long yr, i(Country indicator) j(year)
+rename yr score
+
+encode indicator, gen(indic)
+drop indicator
+reshape wide score, i(Country year) j(indic)
+
+rename (score1 score2) (PrWorkforceinICT ValueAddedICTPctBusSecVA)
+label var PrWorkforceinICT "[UNCTAD ICT] Proportion of total business sector workforce involved in the ICT sector"
+label var ValueAddedICTPctBusSecVA "[UNCTAD ICT] Valued added in the ICT sector as % of total business sector value added"
+
+drop if PrWorkforceinICT==. & ValueAddedICTPctBusSecVA==.
+
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Korea, Rep." if Country=="Korea, Republic of"
+replace Country="West Bank and Gaza" if Country=="State of Palestine"
+replace Country="Macedonia, FYR" if Country=="TFYR of Macedonia"
+replace Country="Slovak Republic" if Country=="Slovakia"
+
+save "UNCTAD ICT.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "UNCTAD ICT.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/**********************/
+/***WDI CUSTOMS DATA***/
+/**********************/
+
+import excel "WDI Customs data.xlsx", sheet("3908d76d-d7c5-4e3d-b2f4-4593976") ///
+ cellrange(A1:I6077) firstrow clear
+
+rename (CountryName CountryCode Time H) (Country Country_Code year Customs_LCU)
+drop TimeCode
+
+foreach v of varlist Averagetimetoclearexportsth BurdenofcustomsprocedureWEF ///
+ Customsandotherimportduties Customs_LCU LogisticsperformanceindexEff {
+ 
+	replace `v'="" if `v'==".."
+	destring `v', replace
+ 
+ }
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[WDI Customs] " + "`u'"
+	label var `v' "`x'"
+}
+ 
+save "WDI Customs.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "WDI Customs.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/********************/
+/***UNCTAD TARIFFS***/
+/********************/
+
+import delimited us_tariff_06356461732761.csv, clear 
+
+rename (v1 v2) (Country Tariff)
+drop in 1
+drop in 1
+drop in 1
+drop in 1
+drop in 1
+
+foreach v of varlist v3-v32 {
+
+	replace `v'="" if `v'==".."
+	replace `v'="" if `v'=="_"
+	destring `v', replace
+
+}
+
+rename (v3-v32) (yr1988 yr1989 yr1990 yr1991 yr1992 yr1993 yr1994 yr1995 yr1996 ///
+ yr1997 yr1998 yr1999 yr2000 yr2001 yr2002 yr2003 yr2004 yr2005 yr2006 yr2007 ///
+ yr2008 yr2009 yr2010 yr2011 yr2012 yr2013 yr2014 yr2015 yr2016 yr2017)
+ 
+reshape long yr, i(Country Tariff) j(year)
+rename yr tariffrate
+
+encode Tariff, gen(tariff)
+drop Tariff
+reshape wide tariffrate, i(Country year) j(tariff)
+
+label var tariffrate1 "Manufactured goods, ores and metals"
+label var tariffrate2 "Ores and metals"
+label var tariffrate3 "Manufactured goods"
+label var tariffrate4 "Chemical products"
+label var tariffrate5 "Machinery and transport equipment"
+label var tariffrate6 "Other manufactured goods"
+
+rename (tariffrate1-tariffrate6) (tariffmanuf_and_ores tarifforeandmetals ///
+ tariffmanufactures tariffchemicals tariffmachinery tariffothermanuf)
+ 
+drop if year<1990
+
+drop if Country=="Indonesia" & year<=2002
+drop if Country=="Indonesia (...2002)" & year>2002
+drop if Country=="Sudan" & year>=2011
+drop if Country=="Sudan (...2011)" & year<2011
+drop if Country=="Serbia" & year<=2006
+drop if Country=="Serbia and Montenegro" & year>2006
+
+replace Country="Bolivia" if Country=="Bolivia (Plurinational State of)"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Czech Republic" if Country=="Czechia"
+replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Congo, Dem. Rep." if Country=="Dem. Rep. of the Congo"
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Iran, Islamic Rep." if Country=="Iran (Islamic Republic of)"
+replace Country="Indonesia" if Country=="Indonesia (...2002)"
+replace Country="Korea, Rep." if Country=="Korea, Republic of"
+replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
+replace Country="Lao PDR" if Country=="Lao People's Dem. Rep."
+replace Country="Macedonia, FYR" if Country=="TFYR of Macedonia"
+replace Country="Moldova" if Country=="Republic of Moldova"
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
+replace Country="West Bank and Gaza" if Country=="State of Palestine"
+replace Country="Tanzania" if Country=="United Republic of Tanzania"
+replace Country="Venezuela, RB" if Country=="Venezuela (Bolivarian Rep. of)"
+replace Country="Vietnam" if Country=="Viet Nam"
+replace Country="Yemen, Rep." if Country=="Yemen"
+replace Country="Switzerland" if Country=="Switzerland, Liechtenstein"
+replace Country="Sudan" if Country=="Sudan (...2011)"
+replace Country="United States" if Country=="United States of America"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Congo, Rep." if Country=="Congo"
+replace Country="Serbia" if Country=="Serbia and Montenegro"
+
+foreach v of varlist _all{
+
+	local u: variable label `v'
+	local x = "[UNCTAD Tariff] " + "`u'"
+	label var `v' "`x'"
+}
+
+save "UNCTAD Tariff data.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "UNCTAD Tariff data.dta"
 drop if _merge==2
 drop _merge
 
