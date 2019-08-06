@@ -6,38 +6,39 @@ set more off
 //This dofile assembles and adapts the datasets created by Eric Lacey and Joseph Massad
 //such that they fit into the dataset already created by Sebastian James, which
 //contains UNU-WIDER data, WDI data, and other data already. We start by labeling
-//Sebastian's data.
+//Sebastian's data.  Last update: 8/6/2019.
 
 //Table of Contents
-//ICTD........................43
-//WDI.........................83
-//WB Enterprise Surveys......237
-//CPIA.......................371
-//Tax Incentives.............472
-//Doing Business.............544
-//Afrobarometer..............705
-//Tax Treaties..............1025
-//PEFA......................1126
-//Polity IV Dataset.........1224
-//Digital Adoption Index....1288
-//GSMA (SSA only)...........1316
-//FCVs......................2951
-//WGI.......................2977
-//IMF Public Debt...........3008
-//SSA ASPIRE................3049
-//Latinbarometro............3119
-//MIMIC informality.........4820
-//WWBI......................4873
-//IMF Commodity Prices......4918
-//Income Levels.............4956
-//ES Bribery Incidence......4989
-//OECD air pollution........5023
-//WDI Climate Change........5058
-//Fiscal Space..............5124
-//UNCTAD ICT................5164
-//WDI Customs...............5211
-//UNCTAD Tariff.............5244
-//Trimming extra Variables..5342
+//ICTD........................44
+//WDI.........................84
+//WB Enterprise Surveys......238
+//CPIA.......................372
+//Tax Incentives.............473
+//Doing Business.............546
+//Afrobarometer..............706
+//Tax Treaties..............1026
+//PEFA......................1127
+//Polity IV Dataset.........1225
+//Digital Adoption Index....1289
+//GSMA (SSA only)...........1317
+//FCVs......................2952
+//WGI.......................2978
+//IMF Public Debt...........3009
+//SSA ASPIRE................3050
+//Latinobarometro...........3120
+//MIMIC informality.........4821
+//WWBI......................4874
+//IMF Commodity Prices......4919
+//Income Levels.............4957
+//ES Bribery Incidence......4990
+//OECD air pollution........5024
+//WDI Climate Change........5059
+//Fiscal Space..............5125
+//UNCTAD ICT................5165
+//WDI Customs...............5212
+//UNCTAD Tariff.............5245
+//WB FINSTATS 2019..........5343
+//Trimming extra Variables..5418
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5333,6 +5334,81 @@ save "UNCTAD Tariff data.dta", replace
 
 use "Master Dataset.dta", clear
 merge m:1 Country year using "UNCTAD Tariff data.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/*******************/
+/***FINSTATS 2019***/
+/*******************/
+
+import excel "C:FinStats Database.xlsx", sheet("Indicator data") firstrow clear
+
+drop Region Incomegroup
+rename (Countryname Year) (Country_Code year)
+
+label var S01CGP0 "Accounts per 1,000 Adults, Commercial Banks"
+label var S02CGP0 "Number of Brancher per 100,000 Adults, Commercial Banks"
+label var S01ESS0 "% of Firms with Line of Credit, All Firms (%)"
+label var S02ESS0 "% of Firms with Line of Credit, Small firms (%)"
+label var S06IFS0 "Domestic Bank Desposits/GDP (%)"
+label var S01IFS0 "Private Credit/GDP (%)"
+label var S08BSK0 "3 Bank Asset Concentration (%)"
+label var S05BSK0 "Cost ot Income Ratio (%)"
+label var S01BSK0 "Net Interest Margin (%)"
+label var S03BSK0 "Non-INterest Income/Total income (%)"
+label var S04BSK0 "Overhead Costs/Total Assets (%)"
+label var S06BSK0 "Return on Assets (%)"
+label var S07BSK0 "Return on Equity (%)"
+label var S03IFS0 "Credit to Government and SOEs/GDP (%)"
+label var S07IFS0 "Lending-Deposit Spread (%)"
+label var S09IFS0 "Private Credit to Deposits (%)"
+label var S05BIS0 "Consolidated Foreign Claims of BIS-Reporting Banks/GDP (%)"
+label var S10BSK0 "Liquid Assets/Deposits & Short Term Funding (%)"
+label var S02FSI0 "Bank Capital to Assets (%)"
+label var S03FSI0 "NPLs to Total Gross Loans (%)"
+label var S04FSI0 "Provisions to NPLs (%)"
+label var S01FSI0 "Regulatory Capital to Risk-Weighted Assets (%)"
+label var S01BIS0 "Outstanding Domestic Private Debt Securities/GDP (%)"
+label var S02BIS0 "Outstanding Domestic Public Debt Securities/GDP (%)"
+label var S03BIS0 "Outstanding International Private Debt Securities/GDP (%)"
+label var S04BIS0 "Outstanding International Public Debt Securities/GDP (%)"
+label var S13IFS0 "Gross Portfolio Debt Assets/GDP (%)"
+label var S15IFS0 "Gross Portfolio Debt Liabilities/GDP (%)"
+label var S01WFE0 "Percent Market Capitalization of Top 10 Largest Companies (%)"
+label var S02WFE0 "Percent Value Traded of Top 10 Traded Companies (%)"
+label var S05WDI0 "Number of Listed Companies"
+label var S03WDI0 "Stock Market Capitalization/GDP (%)"
+label var S01WDI0 "Stock Market Turnover Ratio (%)"
+label var S12IFS0 "Gross Portfolio Equity & Investment Fund Shares Assets/GDP (%)"
+label var S14IFS0 "Gross Portfolio Equity & Investment Fund Shares Liabilities/GDP (%)"
+label var S01AXC0 "Insurance Premiums (Life)/GDP (%)"
+label var S02AXC0 "Inusrance Premiums (Non-Life)/GDP (%)"
+label var S03NBF0 "Insurance Company Assets/GDP (%)"
+label var S02NBF0 "Mutual Fund Assets/GDP (%)"
+label var S01NBF0 "Pension Fund Assets/GDP (%)"
+label var S01WHC0 "Global Leasing Volume/GDP (%)"
+label var S01FCI0 "Total Factoring Volume/GDP (%)"
+label var S01FIN0 "Percent of Adults with an Account at a Formal Institution (%)"
+label var S01DEA0 "Total Bond Issuance Volume/GDP (%)"
+label var S02DEA0 "Total Syndicated Loans Issued Volume/GDP (%)"
+label var S01REM0 "Average Cost of Sending USD200 to Selected Country (%)"
+
+foreach v of varlist _all{
+
+	local u: variable label `v'
+	local x = "[FinStats 2019] " + "`u'"
+	label var `v' "`x'"
+}
+
+drop if year<1990
+replace Country="Sao Tome and Principe" if Country=="SÃ£o TomÃ© and Principe"
+
+save "FinStats 2019 data.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "FinStats 2019 data.dta"
 drop if _merge==2
 drop _merge
 
