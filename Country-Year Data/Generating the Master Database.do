@@ -6,39 +6,40 @@ set more off
 //This dofile assembles and adapts the datasets created by Eric Lacey and Joseph Massad
 //such that they fit into the dataset already created by Sebastian James, which
 //contains UNU-WIDER data, WDI data, and other data already. We start by labeling
-//Sebastian's data.  Last update: 8/6/2019.
+//Sebastian's data.  Last update: 8/9/2019.
 
 //Table of Contents
-//ICTD........................44
-//WDI.........................84
-//WB Enterprise Surveys......238
-//CPIA.......................372
-//Tax Incentives.............473
-//Doing Business.............546
-//Afrobarometer..............706
-//Tax Treaties..............1026
-//PEFA......................1127
-//Polity IV Dataset.........1225
-//Digital Adoption Index....1289
-//GSMA (SSA only)...........1317
-//FCVs......................2952
-//WGI.......................2978
-//IMF Public Debt...........3009
-//SSA ASPIRE................3050
-//Latinobarometro...........3120
-//MIMIC informality.........4821
-//WWBI......................4874
-//IMF Commodity Prices......4919
-//Income Levels.............4957
-//ES Bribery Incidence......4990
-//OECD air pollution........5024
-//WDI Climate Change........5059
-//Fiscal Space..............5125
-//UNCTAD ICT................5165
-//WDI Customs...............5212
-//UNCTAD Tariff.............5245
-//WB FINSTATS 2019..........5343
-//Trimming extra Variables..5418
+//ICTD........................45
+//WDI.........................85
+//WB Enterprise Surveys......239
+//CPIA.......................373
+//Tax Incentives.............474
+//Doing Business.............547
+//Afrobarometer..............707
+//Tax Treaties..............1027
+//PEFA......................1128
+//Polity IV Dataset.........1226
+//Digital Adoption Index....1290
+//GSMA (SSA only)...........1318
+//FCVs......................2953
+//WGI.......................2979
+//IMF Public Debt...........3010
+//SSA ASPIRE................3051
+//Latinobarometro...........3121
+//MIMIC informality.........4822
+//WWBI......................4875
+//IMF Commodity Prices......4920
+//Income Levels.............4958
+//ES Bribery Incidence......4991
+//OECD air pollution........5025
+//WDI Climate Change........5060
+//Fiscal Space..............5126
+//UNCTAD ICT................5166
+//WDI Customs...............5213
+//UNCTAD Tariff.............5246
+//WB FINSTATS 2019..........5344
+//GGKP Environment..........5419
+//Trimming extra Variables..5503
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -2969,7 +2970,7 @@ merge m:1 Country year using "FCV.dta"
 drop if _merge==2
 drop _merge
 
-replace FCV=0 if FCV!=1
+replace FCV=0 if FCV!=1  & year>=2006
 label var FCV "[WB Fragile Status] from harmonized list of fragile situations"
 
 save "Master Dataset.dta", replace
@@ -5414,6 +5415,90 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+/**********************/
+/***GGKP ENVIRONMENT***/
+/**********************/
+
+import excel "GGKP_webplatform_data_2016.11.16.xlsx", ///
+ sheet("GGKP_Data_November2016") firstrow clear
+
+drop G H unit category
+
+encode indicator, gen(indic)
+drop indicator
+reshape wide value, i(country year) j(indic)
+
+label var value1 "% of population with access to electricity"
+label var value2 "% of population with access to improved sanitation"
+label var value3 "% of population with access to improved water source"
+label var value4 "Agricultural land, % of land area"
+label var value5 "Cubic meters of annual freshwater withdrawals per capita"
+label var value6 "% change in average annual deforestation"
+label var value7 "metric tons of CO2 emissions per capita"
+label var value8 "GDP per kg of CO2 emissions"
+label var value9 "Changes in wealth per capita, USD"
+label var value10 "% of GDP, envrionmentally-related tax revenue"
+label var value11 "Fossil fuel consumption subsidies, USD billions"
+label var value12 "GDP per capita, current USD"
+label var value13 "Gini Coefficient, 0-100"
+label var value14 "Human Development Index"
+label var value15 "Population"
+label var value16 "Population Density"
+label var value17 "Micrograms per cubic meter"
+label var value18 "% of electricity from renewable sources"
+label var value19 "% of total territorial area, terrestial and marine"
+label var value20 "% of total labor force"
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[GGKP] " + "`u'"
+	label var `v' "`x'"
+}
+
+rename (value1-value20) (Accesstoelectricity Accesstoimprovedsanitation ///
+ Accesstoimprovedwater AgLand Freshwaterwithdrawals Deforestation CO2emissions ///
+ CarbonProductivity WealthPCchange Env_Tax_Revenue fossilfuelsubsidies GDP_percapita ////
+ Gini HDI Population PopDensity Popexposuretoairpollution renewableelectricity ///
+ protectedareas Unemployment)
+ 
+rename country Country
+drop if year<1990
+
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Bolivia" if Country=="Bolivia (Plurinational State of)"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Congo, Rep." if Country=="Congo"
+replace Country="Congo, Dem. Rep." if Country=="Democratic Republic of the Congo"
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Iran, Islamic Rep." if Country=="Iran (Islamic Republic of)"
+replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
+replace Country="Lao PDR" if Country=="Lao People's Democratic Republic"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia (Federated States of)"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Korea, Rep." if Country=="Republic of Korea"
+replace Country="Moldova" if Country=="Republic of Moldova"
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
+replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="Macedonia, FYR" if Country=="The former Yugoslav Republic of Macedonia"
+replace Country="United Kingdom" if Country=="United Kingdom of Great Britain and Northern Ireland"
+replace Country="Tanzania" if Country=="United Republic of Tanzania"
+replace Country="United States" if Country=="United States of America"
+replace Country="Venezuela, RB" if Country=="Venezuela (Bolivarian Republic of)"
+replace Country="Vietnam" if Country=="Viet Nam"
+replace Country="Yemen, Rep." if Country=="Yemen"
+
+save "GGKP Dataset.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "GGKP Dataset.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
@@ -5430,7 +5515,8 @@ drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
  buoy_cnt_Tax_Revenue_gt_1 buoy_cnt_Income_Taxes_gt_1 buoy_cnt_Property_Tax_gt_1 ///
  buoy_cnt_Value_Added_Tax_gt_1 buoy_cnt_Excise_Taxes_gt_1 ///
  buoy_cnt_Trade_Taxes_gt_1 tot_yrs Country_ID country ranktaxes19 scoretaxes1719 ///
- round why_avoid_tax CountryCode
+ round why_avoid_tax CountryCode GDP_percapita Gini AgLand CO2emissions ///
+ Popexposuretoairpollution
  
 save "Master Dataset.dta", replace
  
