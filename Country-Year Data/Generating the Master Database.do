@@ -22,24 +22,24 @@ set more off
 //Digital Adoption Index....1290
 //GSMA (SSA only)...........1318
 //FCVs......................2953
-//WGI.......................2979
-//IMF Public Debt...........3010
-//SSA ASPIRE................3051
-//Latinobarometro...........3121
-//MIMIC informality.........4822
-//WWBI......................4875
-//IMF Commodity Prices......4920
-//Income Levels.............4958
-//ES Bribery Incidence......4991
-//OECD air pollution........5025
-//WDI Climate Change........5060
-//Fiscal Space..............5126
-//UNCTAD ICT................5166
-//WDI Customs...............5213
-//UNCTAD Tariff.............5246
-//WB FINSTATS 2019..........5344
-//GGKP Environment..........5419
-//Trimming extra Variables..5503
+//WGI.......................2980
+//IMF Public Debt...........3011
+//SSA ASPIRE................3052
+//Latinobarometro...........3122
+//MIMIC informality.........4823
+//WWBI......................4876
+//IMF Commodity Prices......4921
+//Income Levels.............4959
+//ES Bribery Incidence......4992
+//OECD air pollution........5026
+//WDI Climate Change........5061
+//Fiscal Space..............5127
+//UNCTAD ICT................5167
+//WDI Customs...............5214
+//UNCTAD Tariff.............5247
+//WB FINSTATS 2019..........5345
+//GGKP Environment..........5420
+//Trimming extra Variables..5504
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -2959,6 +2959,7 @@ replace Country="Bosnia and Herzegovina" if Country=="Bosnia & Herzegovina"
 replace Country="Guinea-Bissau" if Country=="Guinea Bissau"
 replace Country="Lao PDR" if Country=="Lao, PDR"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia, FS"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia FS"
 replace Country="Syrian Arab Republic" if Country=="Syria"
 replace Country="Yemen, Rep." if Country=="Yemen"
 replace Country="Venezuela, RB" if Country=="Venezuela"
