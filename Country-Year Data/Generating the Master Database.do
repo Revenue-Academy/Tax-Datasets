@@ -2953,7 +2953,7 @@ save "Master Dataset.dta", replace
 /*********FCVs**********/
 /***********************/
 
-import excel "Historical FCV.xlsx", firstrow cellrange(A1:C489) clear
+import excel "Historical FCV.xlsx", firstrow cellrange(A1:C530) clear
 
 replace Country="Bosnia and Herzegovina" if Country=="Bosnia & Herzegovina"
 replace Country="Guinea-Bissau" if Country=="Guinea Bissau"
