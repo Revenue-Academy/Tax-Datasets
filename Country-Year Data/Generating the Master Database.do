@@ -9,37 +9,38 @@ set more off
 //Sebastian's data.  Last update: 8/9/2019.
 
 //Table of Contents
-//ICTD........................45
-//WDI.........................85
-//WB Enterprise Surveys......239
-//CPIA.......................373
-//Tax Incentives.............474
-//Doing Business.............547
-//Afrobarometer..............707
-//Tax Treaties..............1027
-//PEFA......................1128
-//Polity IV Dataset.........1226
-//Digital Adoption Index....1290
-//GSMA (SSA only)...........1318
-//FCVs......................2953
-//WGI.......................2980
-//IMF Public Debt...........3011
-//SSA ASPIRE................3052
-//Latinobarometro...........3122
-//MIMIC informality.........4823
-//WWBI......................4876
-//IMF Commodity Prices......4921
-//Income Levels.............4959
-//ES Bribery Incidence......4992
-//OECD air pollution........5026
-//WDI Climate Change........5061
-//Fiscal Space..............5127
-//UNCTAD ICT................5167
-//WDI Customs...............5214
-//UNCTAD Tariff.............5247
-//WB FINSTATS 2019..........5345
-//GGKP Environment..........5420
-//Trimming extra Variables..5504
+//ICTD........................46
+//WDI.........................86
+//WB Enterprise Surveys......240
+//CPIA.......................374
+//Tax Incentives.............475
+//Doing Business.............548
+//Afrobarometer..............708
+//Tax Treaties..............1028
+//PEFA......................1129
+//Polity IV Dataset.........1227
+//Digital Adoption Index....1291
+//GSMA (SSA only)...........1319
+//FCVs......................2954
+//WGI.......................2981
+//IMF Public Debt...........3012
+//SSA ASPIRE................3053
+//Latinobarometro...........3123
+//MIMIC informality.........4824
+//WWBI......................4877
+//IMF Commodity Prices......4922
+//Income Levels.............4960
+//ES Bribery Incidence......4993
+//OECD air pollution........5027
+//WDI Climate Change........5062
+//Fiscal Space..............5128
+//UNCTAD ICT................5168
+//WDI Customs...............5215
+//UNCTAD Tariff.............5248
+//WB FINSTATS 2019..........5346
+//GGKP Environment..........5421
+//IMF Energy Subsidies......5505
+//Trimming extra Variables..5577
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5499,6 +5500,78 @@ drop if _merge==2
 drop _merge
 
 save "Master Dataset.dta", replace
+
+/************************/
+/***IMF FUEL SUBSIDIES***/
+/************************/
+
+import excel "IMF fuel tax gap database.xlsx", sheet("By product (2015)") ///
+ cellrange(A1:R210) firstrow clear
+drop A-C
+drop NominalGDP-M
+
+rename (country N O P Q R) (Country petroleumposttaxsubsidy coalposttaxsubsidy ///
+ naturalgasposttaxsubsidy electricityposttaxsubsidy totalposttaxsubsidy)
+ 
+drop in 1/4
+drop if Country==""
+
+destring petroleumposttaxsubsidy-totalposttaxsubsidy, replace
+gen year=2015
+
+tempfile y2015
+save `y2015', replace
+
+import excel "IMF fuel tax gap database.xlsx", sheet("By product (2017)") ///
+ cellrange(A1:R210) firstrow clear
+drop A-C
+drop NominalGDP-M
+
+rename (country N O P Q R) (Country petroleumposttaxsubsidy coalposttaxsubsidy ///
+ naturalgasposttaxsubsidy electricityposttaxsubsidy totalposttaxsubsidy)
+ 
+drop in 1/4
+drop if Country==""
+
+destring petroleumposttaxsubsidy-totalposttaxsubsidy, replace
+gen year=2017
+
+append using `y2015'
+
+lab var petroleumposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy of Petroleum (% of GDP)"
+lab var coalposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy of Coal (% of GDP)"
+lab var naturalgasposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy of Natural Gas (% of GDP)"
+lab var electricityposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy of Electricity (% of GDP)"
+lab var totalposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy Total (% of GDP)"
+
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Congo, Dem. Rep." if Country=="Congo, Democratic Republic of the"
+replace Country="Congo, Rep." if Country=="Congo, Republic of"
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Macedonia, FYR" if Country=="FYR Macedonia"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong SAR"
+replace Country="Iran, Islamic Rep." if Country=="Iran"
+replace Country="Korea, Rep." if Country=="Korea"
+replace Country="Lao PDR" if Country=="Lao P.D.R."
+replace Country="Macao SAR, China" if Country=="Macao SAR"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia"
+replace Country="Montenegro" if Country=="Montenegro, Rep. of"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Russian Federation" if Country=="Russia"
+replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
+replace Country="Timor-Leste" if Country=="Timor-Leste, Dem. Rep. of"
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Yemen, Rep." if Country=="Yemen"
+
+save "IMF fuel tax gap data.dta", replace
+
+use "Master Dataset.dta", clear
+
+merge m:1 Country year using "IMF fuel tax gap data"
+drop if _merge==2
+drop _merge
 
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
