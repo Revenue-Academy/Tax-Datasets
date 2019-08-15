@@ -6,41 +6,42 @@ set more off
 //This dofile assembles and adapts the datasets created by Eric Lacey and Joseph Massad
 //such that they fit into the dataset already created by Sebastian James, which
 //contains UNU-WIDER data, WDI data, and other data already. We start by labeling
-//Sebastian's data.  Last update: 8/9/2019.
+//Sebastian's data.  Last update: 8/15/2019.
 
 //Table of Contents
-//ICTD........................46
-//WDI.........................86
-//WB Enterprise Surveys......240
-//CPIA.......................374
-//Tax Incentives.............475
-//Doing Business.............548
-//Afrobarometer..............708
-//Tax Treaties..............1028
-//PEFA......................1129
-//Polity IV Dataset.........1227
-//Digital Adoption Index....1291
-//GSMA (SSA only)...........1319
-//FCVs......................2954
-//WGI.......................2981
-//IMF Public Debt...........3012
-//SSA ASPIRE................3053
-//Latinobarometro...........3123
-//MIMIC informality.........4824
-//WWBI......................4877
-//IMF Commodity Prices......4922
-//Income Levels.............4960
-//ES Bribery Incidence......4993
-//OECD air pollution........5027
-//WDI Climate Change........5062
-//Fiscal Space..............5128
-//UNCTAD ICT................5168
-//WDI Customs...............5215
-//UNCTAD Tariff.............5248
-//WB FINSTATS 2019..........5346
-//GGKP Environment..........5421
-//IMF Energy Subsidies......5505
-//Trimming extra Variables..5577
+//ICTD........................47
+//WDI.........................87
+//WB Enterprise Surveys......241
+//CPIA.......................375
+//Tax Incentives.............476
+//Doing Business.............549
+//Afrobarometer..............709
+//Tax Treaties..............1029
+//PEFA......................1130
+//Polity IV Dataset.........1228
+//Digital Adoption Index....1292
+//GSMA (SSA only)...........1320
+//FCVs......................2955
+//WGI.......................2982
+//IMF Public Debt...........3013
+//SSA ASPIRE................3054
+//Latinobarometro...........3124
+//MIMIC informality.........4825
+//WWBI......................4878
+//IMF Commodity Prices......4923
+//Income Levels.............4961
+//ES Bribery Incidence......4994
+//OECD air pollution........5028
+//WDI Climate Change........5063
+//Fiscal Space..............5129
+//UNCTAD ICT................5169
+//WDI Customs...............5216
+//UNCTAD Tariff.............5249
+//WB FINSTATS 2019..........5347
+//GGKP Environment..........5422
+//IMF Energy Subsidies......5506
+//TI Corruption Perceptions.5577
+//Trimming extra Variables..5630
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5572,6 +5573,58 @@ use "Master Dataset.dta", clear
 merge m:1 Country year using "IMF fuel tax gap data"
 drop if _merge==2
 drop _merge
+
+/*************************************/
+/***TI CORRUPTION PERCEPTIONS INDEX***/
+/*************************************/
+
+import excel "2018_CPI_FullDataSet.xlsx", sheet("CPI Timeseries 2012 - 2018") ///
+ firstrow clear
+ 
+rename (CorruptionPer D H L O R U X) (Country CPI2018 CPI2017 CPI2016 CPI2015 ///
+ CPI2014 CPI2013 CPI2012)
+ 
+drop B C E F G I J K M N P Q S T V W Y Z
+drop in 1/2
+
+destring CPI2018-CPI2012, replace
+
+reshape long CPI, i(Country) j(year)
+
+rename CPI TI_CPI
+
+lab var TI_CPI "[TI] Corruption Perceptions Index"
+
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Congo, Dem. Rep." if Country=="Democratic Republic of the Congo"
+replace Country="Congo, Rep." if Country=="Congo"
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Guinea-Bissau" if Country=="Guinea Bissau"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong"
+replace Country="Iran, Islamic Rep." if Country=="Iran"
+replace Country="Korea, Rep." if Country=="Korea, South"
+replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
+replace Country="Lao PDR" if Country=="Laos"
+replace Country="Macedonia, FYR" if Country=="Macedonia"
+replace Country="Russian Federation" if Country=="Russia"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
+replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="United States" if Country=="United States of America"
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Yemen, Rep." if Country=="Yemen"
+
+save "TI Corruption data.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "TI Corruption data.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
 
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
