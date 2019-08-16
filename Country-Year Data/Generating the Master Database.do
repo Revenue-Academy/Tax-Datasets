@@ -6,41 +6,42 @@ set more off
 //This dofile assembles and adapts the datasets created by Eric Lacey and Joseph Massad
 //such that they fit into the dataset already created by Sebastian James, which
 //contains UNU-WIDER data, WDI data, and other data already. We start by labeling
-//Sebastian's data.  Last update: 8/15/2019.
+//Sebastian's data.  Last update: 8/16/2019.
 
 //Table of Contents
-//ICTD........................47
-//WDI.........................87
-//WB Enterprise Surveys......241
-//CPIA.......................375
-//Tax Incentives.............476
-//Doing Business.............549
-//Afrobarometer..............709
-//Tax Treaties..............1029
-//PEFA......................1130
-//Polity IV Dataset.........1228
-//Digital Adoption Index....1292
-//GSMA (SSA only)...........1320
-//FCVs......................2955
-//WGI.......................2982
-//IMF Public Debt...........3013
-//SSA ASPIRE................3054
-//Latinobarometro...........3124
-//MIMIC informality.........4825
-//WWBI......................4878
-//IMF Commodity Prices......4923
-//Income Levels.............4961
-//ES Bribery Incidence......4994
-//OECD air pollution........5028
-//WDI Climate Change........5063
-//Fiscal Space..............5129
-//UNCTAD ICT................5169
-//WDI Customs...............5216
-//UNCTAD Tariff.............5249
-//WB FINSTATS 2019..........5347
-//GGKP Environment..........5422
-//IMF Energy Subsidies......5506
-//TI Corruption Perceptions.5577
+//ICTD........................48
+//WDI.........................88
+//WB Enterprise Surveys......242
+//CPIA.......................376
+//Tax Incentives.............477
+//Doing Business.............550
+//Afrobarometer..............710
+//Tax Treaties..............1030
+//PEFA......................1131
+//Polity IV Dataset.........1229
+//Digital Adoption Index....1293
+//GSMA (SSA only)...........1321
+//FCVs......................2956
+//WGI.......................2983
+//IMF Public Debt...........3014
+//SSA ASPIRE................3055
+//Latinobarometro...........3125
+//MIMIC informality.........4826
+//WWBI......................4879
+//IMF Commodity Prices......4924
+//Income Levels.............4962
+//ES Bribery Incidence......4995
+//OECD air pollution........5029
+//WDI Climate Change........5064
+//Fiscal Space..............5130
+//UNCTAD ICT................5170
+//WDI Customs...............5217
+//UNCTAD Tariff.............5250
+//WB FINSTATS 2019..........5348
+//GGKP Environment..........5423
+//IMF Energy Subsidies......5507
+//TI Corruption Perceptions.5578
+//OWiD Plastic Waste........5631
 //Trimming extra Variables..5630
 
 /**********************************/
@@ -5626,6 +5627,74 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+/*************************************/
+/***OUR WORLD IN DATA PLASTIC WASTE***/
+/*************************************/
+
+import delimited plastic-waste-per-capita.csv, clear
+
+tempfile pwpc
+save `pwpc', replace
+
+import delimited plastic-waste-littered.csv, clear
+
+tempfile pwl
+save `pwl', replace
+
+import delimited plastic-waste-generation-total.csv, clear
+
+tempfile pwgt
+save `pwgt', replace
+
+import delimited inadequately-managed-plastic.csv, clear
+
+merge 1:1 entity using `pwpc'
+drop _merge
+merge 1:1 entity using `pwl'
+drop _merge
+merge 1:1 entity using `pwgt'
+drop _merge
+
+rename (entity shareofplasticinadequatelymanage percapitaplasticwastekilogramspe ///
+ plasticwastelitteredtonnesperyea plasticwastegenerationtonnestota) (Country ///
+ inad_mgmt_plastic_share plastic_waste_pc plastic_waste_litter plastic_waste_generated)
+ 
+lab var Country "" 
+lab var inad_mgmt_plastic_share "[OWiD 2010] Inadequate management of Plastic, share"
+lab var plastic_waste_pc "[OWiD 2010] Per capita plastic waste (kg per person per day)"
+lab var plastic_waste_litter "[OWiD 2010] Plastic waste littered (tons per year)"
+lab var plastic_waste_generated "[OWiD 2010] Plastic waste generation (tons per year, total)"
+
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Brunei Darussalam" if Country=="Brunei"
+replace Country="Congo, Rep." if Country=="Congo"
+replace Country="Congo, Dem. Rep." if Country=="Democratic Republic of Congo"
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong"
+replace Country="Iran, Islamic Rep." if Country=="Iran"
+replace Country="Macao SAR, China" if Country=="Macao"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia (country)"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="West Bank and Gaza" if Country=="Palestine"
+replace Country="Russian Federation" if Country=="Russia"
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
+replace Country="Korea, Rep." if Country=="South Korea"
+replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Yemen, Rep." if Country=="Yemen"
+
+save "OWiD 2010 data.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using "OWiD 2010 data.dta"
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
@@ -5643,7 +5712,7 @@ drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
  buoy_cnt_Value_Added_Tax_gt_1 buoy_cnt_Excise_Taxes_gt_1 ///
  buoy_cnt_Trade_Taxes_gt_1 tot_yrs Country_ID country ranktaxes19 scoretaxes1719 ///
  round why_avoid_tax CountryCode GDP_percapita Gini AgLand CO2emissions ///
- Popexposuretoairpollution
+ Popexposuretoairpollution code
  
 save "Master Dataset.dta", replace
  
