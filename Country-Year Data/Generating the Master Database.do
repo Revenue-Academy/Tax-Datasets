@@ -9,40 +9,41 @@ set more off
 //Sebastian's data.  Last update: 8/16/2019.
 
 //Table of Contents
-//ICTD........................48
-//WDI.........................88
-//WB Enterprise Surveys......242
-//CPIA.......................376
-//Tax Incentives.............477
-//Doing Business.............550
-//Afrobarometer..............710
-//Tax Treaties..............1030
-//PEFA......................1131
-//Polity IV Dataset.........1229
-//Digital Adoption Index....1293
-//GSMA (SSA only)...........1321
-//FCVs......................2956
-//WGI.......................2983
-//IMF Public Debt...........3014
-//SSA ASPIRE................3055
-//Latinobarometro...........3125
-//MIMIC informality.........4826
-//WWBI......................4879
-//IMF Commodity Prices......4924
-//Income Levels.............4962
-//ES Bribery Incidence......4995
-//OECD air pollution........5029
-//WDI Climate Change........5064
-//Fiscal Space..............5130
-//UNCTAD ICT................5170
-//WDI Customs...............5217
-//UNCTAD Tariff.............5250
-//WB FINSTATS 2019..........5348
-//GGKP Environment..........5423
-//IMF Energy Subsidies......5507
-//TI Corruption Perceptions.5578
-//OWiD Plastic Waste........5631
-//Trimming extra Variables..5630
+//ICTD........................49
+//WDI.........................89
+//WB Enterprise Surveys......243
+//CPIA.......................377
+//Tax Incentives.............478
+//Doing Business.............551
+//Afrobarometer..............711
+//Tax Treaties..............1031
+//PEFA......................1132
+//Polity IV Dataset.........1230
+//Digital Adoption Index....1294
+//GSMA (SSA only)...........1322
+//FCVs......................2957
+//WGI.......................2984
+//IMF Public Debt...........3015
+//SSA ASPIRE................3056
+//Latinobarometro...........3126
+//MIMIC informality.........4827
+//WWBI......................4880
+//IMF Commodity Prices......4925
+//Income Levels.............4963
+//ES Bribery Incidence......4996
+//OECD air pollution........5030
+//WDI Climate Change........5065
+//Fiscal Space..............5131
+//UNCTAD ICT................5171
+//WDI Customs...............5218
+//UNCTAD Tariff.............5251
+//WB FINSTATS 2019..........5349
+//GGKP Environment..........5424
+//IMF Energy Subsidies......5508
+//TI Corruption Perceptions.5579
+//OWiD Plastic Waste........5632
+//Financial Secrecy Index...5700
+//Trimming extra Variables..5763
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5695,6 +5696,69 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+/*****************************/
+/***FINANCIAL SECRECY INDEX***/
+/*****************************/
+
+import excel "FSI Rankings 2018.xlsx", firstrow sheet("SS") cellrange(A1:V114) clear
+drop if Jurisdiction==""
+destring KI*, replace
+rename Final FinalSS
+rename Jurisdiction Country
+
+local counter = 1
+while `counter'<=20 {
+	rename KI`counter' FSI_`counter'
+	local counter = `counter' + 1
+}
+
+label var FSI_1 "[FSI 2018] Banking Secrecy"
+label var FSI_2 "[FSI 2018] Trusts & Private Foundations"
+label var FSI_3 "[FSI 2018] Company Ownership Registration"
+label var FSI_4 "[FSI 2018] Freeport & Real Estate"
+label var FSI_5 "[FSI 2018] Limited Partnership Transparency"
+label var FSI_6 "[FSI 2018] Company Ownership Publication"
+label var FSI_7 "[FSI 2018] Company Accounts Publication"
+label var FSI_8 "[FSI 2018] Country-by-Country Reporting"
+label var FSI_9 "[FSI 2018] Corporate Tax Disclosure"
+label var FSI_10 "[FSI 2018] Legal Entity Identifier"
+label var FSI_11 "[FSI 2018] Tax Administration Capacity"
+label var FSI_12 "[FSI 2018] Consistent Personal Income Tax"
+label var FSI_13 "[FSI 2018] Promotion of Tax Evasion"
+label var FSI_14 "[FSI 2018] Tax Court Secrecy"
+label var FSI_15 "[FSI 2018] Harmful Structures"
+label var FSI_16 "[FSI 2018] Public Statistics"
+label var FSI_17 "[FSI 2018] Anti-Money Laundering"
+label var FSI_18 "[FSI 2018] Automatic Exchange of Information"
+label var FSI_19 "[FSI 2018] Bilateral Treaties"
+label var FSI_20 "[FSI 2018] International Legal Cooperation"
+label var FinalSS "[FSI 2018] Final Secrecy Score (average of 20)"
+
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong"
+replace Country="Macao SAR, China" if Country=="Macao"
+replace Country="Macedonia, FYR" if Country=="Macedonia"
+replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Russian Federation" if Country=="Russia"
+replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="Korea, Rep." if Country=="South Korea"
+replace Country="United States" if Country=="USA"
+replace Country="Benezuela, RB" if Country=="Venezuela"
+replace Country="United Arab Emirates" if Country=="United Arab Emirates (Dubai)"
+replace Country="Portugal" if Country=="Portugal (Madeira)"
+replace Country="Malaysia" if Country=="Malaysia (Labuan)"
+
+tempfile secrecy
+save `secrecy'
+
+use "Master Dataset.dta", clear
+merge m:1 Country using `secrecy'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
@@ -5715,4 +5779,4 @@ drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
  Popexposuretoairpollution code
  
 save "Master Dataset.dta", replace
- 
+
