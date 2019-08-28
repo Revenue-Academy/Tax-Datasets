@@ -6,44 +6,45 @@ set more off
 //This dofile assembles and adapts the datasets created by Eric Lacey and Joseph Massad
 //such that they fit into the dataset already created by Sebastian James, which
 //contains UNU-WIDER data, WDI data, and other data already. We start by labeling
-//Sebastian's data.  Last update: 8/16/2019.
+//Sebastian's data.  Last update: 8/28/2019.
 
 //Table of Contents
-//ICTD........................49
-//WDI.........................89
-//WB Enterprise Surveys......243
-//CPIA.......................377
-//Tax Incentives.............478
-//Doing Business.............551
-//Afrobarometer..............711
-//Tax Treaties..............1031
-//PEFA......................1132
-//Polity IV Dataset.........1230
-//Digital Adoption Index....1294
-//GSMA (SSA only)...........1322
-//FCVs......................2957
-//WGI.......................2984
-//IMF Public Debt...........3015
-//SSA ASPIRE................3056
-//Latinobarometro...........3126
-//MIMIC informality.........4827
-//WWBI......................4880
-//IMF Commodity Prices......4925
-//Income Levels.............4963
-//ES Bribery Incidence......4996
-//OECD air pollution........5030
-//WDI Climate Change........5065
-//Fiscal Space..............5131
-//UNCTAD ICT................5171
-//WDI Customs...............5218
-//UNCTAD Tariff.............5251
-//WB FINSTATS 2019..........5349
-//GGKP Environment..........5424
-//IMF Energy Subsidies......5508
-//TI Corruption Perceptions.5579
-//OWiD Plastic Waste........5632
-//Financial Secrecy Index...5636
-//Trimming extra Variables..5699
+//ICTD........................50
+//WDI.........................90
+//WB Enterprise Surveys......244
+//CPIA.......................378
+//Tax Incentives.............479
+//Doing Business.............552
+//Afrobarometer..............712
+//Tax Treaties..............1032
+//PEFA......................1133
+//Polity IV Dataset.........1231
+//Digital Adoption Index....1295
+//GSMA (SSA only)...........1323
+//FCVs......................2958
+//WGI.......................2985
+//IMF Public Debt...........3016
+//SSA ASPIRE................3057
+//Latinobarometro...........3127
+//MIMIC informality.........4828
+//WWBI......................4881
+//IMF Commodity Prices......4926
+//Income Levels.............4964
+//ES Bribery Incidence......4997
+//OECD air pollution........5031
+//WDI Climate Change........5066
+//Fiscal Space..............5132
+//UNCTAD ICT................5172
+//WDI Customs...............5219
+//UNCTAD Tariff.............5252
+//WB FINSTATS 2019..........5350
+//GGKP Environment..........5425
+//IMF Energy Subsidies......5509
+//TI Corruption Perceptions.5580
+//OWiD Plastic Waste........5633
+//Financial Secrecy Index...5637
+//Heritage Foundation.......5700
+//Trimming extra Variables..5879
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -5692,6 +5693,185 @@ use "Master Dataset.dta", clear
 merge m:1 Country using `secrecy'
 drop if _merge==2
 drop _merge
+
+save "Master Dataset.dta", replace
+
+/**********************************/
+/***HERITAGE FOUNDATION FREEDOMS***/
+/**********************************/
+
+import excel "index2019_data.xls", sheet("Sheet1") firstrow clear
+
+keep CountryName PropertyRights TaxBurden BusinessFreedom-FinancialFreedom ///
+ TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist _all {
+	replace `v'="" if `v'=="N/A"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2019
+
+tempfile i19
+save `i19', replace
+
+import excel "index2018_data.xls", sheet("Sheet1") firstrow clear
+
+keep CountryName PropertyRights TaxBurden BusinessFreedom-FinancialFreedom ///
+ TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist _all {
+	replace `v'="" if `v'=="N/A"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2018
+
+tempfile i18
+save `i18', replace
+
+import excel "index2017_data.xls", sheet("Sheet1") firstrow clear
+ 
+keep CountryName PropertyRights TaxBurden BusinessFreedom-FinancialFreedom ///
+ TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist Property TaxBurden Monetary Trade Investment Financial ///
+ TaxBurdenofGDP {
+	replace `v'="" if `v'=="N/A" | `v'=="n/a"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2017
+
+tempfile i17
+save `i17', replace
+
+import excel "index2016_data.xls", sheet("Sheet1") firstrow clear
+ 
+keep CountryName PropertyRights FiscalFreedom BusinessFreedom LaborFreedom ///
+ MonetaryFreedom TradeFreedom InvestmentFreedom FinancialFreedom TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist _all {
+	replace `v'="" if `v'=="N/A" | `v'=="n/a"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2016
+
+tempfile i16
+save `i16', replace
+
+import excel "index2015_data.xls", sheet("2014") firstrow clear
+ 
+keep CountryName PropertyRights BusinessFreedom LaborFreedom MonetaryFreedom ///
+ TradeFreedom InvestmentFreedom FinancialFreedom TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist _all {
+	replace `v'="" if `v'=="N/A" | `v'=="n/a"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2015
+
+tempfile i15
+save `i15', replace
+
+import excel "index2014_data.xls", sheet("2014") firstrow clear
+ 
+keep CountryName PropertyRights FiscalFreedom BusinessFreedom LaborFreedom ///
+ MonetaryFreedom TradeFreedom InvestmentFreedom FinancialFreedom TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist _all {
+	replace `v'="" if `v'=="N/A" | `v'=="n/a"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2014
+
+tempfile i14
+save `i14', replace
+
+import excel "index2013_data.xls", sheet("2010") firstrow clear
+
+keep CountryName PropertyRights FiscalFreedom BusinessFreedom LaborFreedom ///
+ MonetaryFreedom TradeFreedom InvestmentFreedom FinancialFreedom TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist _all {
+	replace `v'="" if `v'=="N/A" | `v'=="n/a"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2013
+
+order Country year, first
+
+append using `i14'
+append using `i15'
+append using `i16'
+append using `i17'
+append using `i18', force
+append using `i19'
+
+sort Country year
+
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Myanmar" if Country=="Burma"
+replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Congo, Dem. Rep." if Country=="Congo, Democratic Republic of" | ///
+ Country=="Congo, Democratic Republic of the Congo"
+replace Country="Congo, Rep." if Country=="Congo, Republic of"
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Egypt, Arab Rep." if Country=="Egypt"
+replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong" | Country=="Hong Kong SAR"
+replace Country="Iran, Islamic Rep." if Country=="Iran"
+replace Country="Korea, DPR" if Country=="Korea, North" | Country=="Korea, North "
+replace Country="Korea, Rep." if Country=="Korea, South"
+replace Country="Lao PDR" if Country=="Lao P.D.R." | Country=="Laos"
+replace Country="Macao SAR, China" if Country=="Macau"
+replace Country="Macedonia, FYR" if Country=="Macedonia"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia"
+replace Country="Russian Federation" if Country=="Russia"
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
+replace Country="St. Lucia" if Country=="Saint Lucia" | Country=="Saint. Lucia"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines" ///
+ | Country=="Saint Vincent and The Grenadines" | Country=="Saint. Vincent and the Grenadines"
+replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
+replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="Taiwan" if Country=="Taiwan "
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Yemen, Rep." if Country=="Yemen"
+
+foreach v of varlist Property-TaxBurden {
+	local u: variable label `v'
+	local x = "[Heritage] " + "`u'"
+	label var `v' "`x'"
+}
+
+tempfile heritage
+save `heritage', replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country year using `heritage'
+drop if _merge==2
+drop _merge
+
 
 save "Master Dataset.dta", replace
 
