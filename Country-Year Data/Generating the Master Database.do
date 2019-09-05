@@ -1,83 +1,247 @@
 clear all
 set more off
 
-//cd "D:\WB Tax Consultancy"
+//This dofile assembles and adapts 3rd-party datasets such that
+//they merge with ICTD data at the country-year level from 1990-2017
+//Last update: September 5 2019.
 
-//This dofile assembles and adapts the datasets created by Eric Lacey and Joseph Massad
-//such that they fit into the dataset already created by Sebastian James, which
-//contains UNU-WIDER data, WDI data, and other data already. We start by labeling
-//Sebastian's data.  Last update: 8/28/2019.
-
-//Table of Contents
-//ICTD........................50
-//WDI.........................90
-//WB Enterprise Surveys......244
-//CPIA.......................378
-//Tax Incentives.............479
-//Doing Business.............552
-//Afrobarometer..............712
-//Tax Treaties..............1032
-//PEFA......................1133
-//Polity IV Dataset.........1231
-//Digital Adoption Index....1295
-//GSMA (SSA only)...........1323
-//FCVs......................2958
-//WGI.......................2985
-//IMF Public Debt...........3016
-//SSA ASPIRE................3057
-//Latinobarometro...........3127
-//MIMIC informality.........4828
-//WWBI......................4881
-//IMF Commodity Prices......4926
-//Income Levels.............4964
-//ES Bribery Incidence......4997
-//OECD air pollution........5031
-//WDI Climate Change........5066
-//Fiscal Space..............5132
-//UNCTAD ICT................5172
-//WDI Customs...............5219
-//UNCTAD Tariff.............5252
-//WB FINSTATS 2019..........5350
-//GGKP Environment..........5425
-//IMF Energy Subsidies......5509
-//TI Corruption Perceptions.5580
-//OWiD Plastic Waste........5633
-//Financial Secrecy Index...5637
-//Heritage Foundation.......5700
-//Trimming extra Variables..5879
+/*Table of Contents (Ctrl-F the entire phrase)
+ICTD & GTT Calculations
+World Development Indicators
+Enterprise Surveys
+CPIA
+Tax Incentives
+Doing Business
+Afrobarometer
+Actionaid Tax Treaties
+PEFA
+Polity IV Dataset
+Digital Adoption Index
+GSMA (SSA only)
+Harmonized List of FCV
+WGI
+IMF Public Debt
+Aspire (SSA)
+Latinobarometro
+MIMIC informality
+Worldwide Bureaucracy Indicators
+IMF Commodity Prices
+WB Income Levels
+OECD AIR EMISSIONS
+WDI Climate Change
+Cross-Country Database of Fiscal Policy
+UNCTAD ICT
+WDI Customs
+UNCTAD Tariffs
+WB FINSTATS 2019
+GGKP Environment
+IMF Energy Subsidies
+TI Corruption Perceptions index
+Our World in Data Plastic Waste
+Financial Secrecy Index
+Heritage Foundation freedoms
+Trimming extra Variables
+*/
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
 /**********************************/
 
-//add source data and missing countries to Sebastian's work
-import excel "Gov Rev Dataset.xlsx", sheet("work") firstrow cellrange(A1:H7251) clear
-
-rename Source gov_data_source
+//pull local-currency GDP from the ICTD excel sheet
+import excel "ICTD excel.xlsx", clear sheet("GDP Series") firstrow cellrange(A2:AM200)
+local yearcounter = 1980
+foreach var of varlist B-AM {
+	rename `var' GDP_LCU`yearcounter'
+	local yearcounter = `yearcounter' + 1
+}
+reshape long GDP_LCU, i(ISO) j(year)
+label var GDP_LCU "Millions of LCU and almost always comes from the IMF's WEO (Apr 2019)"
 rename ISO Country_Code
-rename Year year
-destring year, replace
-//save a few mismatched ISO codes
-replace Country_Code="TLS" if Country=="Timor-Leste"
-replace Country_Code="XKX" if Country=="Kosovo"
-replace Country_Code="PSE" if Country=="West Bank and Gaza"
-drop Identifier Country Reg Inc
+//syncing iso codes to WBG standard
+replace Country_Code="XKX" if Country_Code=="KSV"
+replace Country_Code="PSE" if Country_Code=="WBG"
+tempfile GDPLCU
+save `GDPLCU'
 
-save "ICTD metadata.dta", replace
+//Prepare trade, GDP, and GDP per capita data from the WDI
+import excel "WDI Trade GDP GDP_PC.xlsx", clear firstrow cellrange(A1:G6294)
+drop CountryName
+rename CountryCode Country_Code
+rename Time year
+drop TimeCode
+rename Tradeof Trade
+rename GDPconstant GDP_Constant_USD
+rename GDPpercapita GDP_PC
+tempfile WDIdata
+save `WDIdata'
 
-use "Augmented Tax Dataset after Sebastian's dofiles.dta", clear
-//adding a few missing countries (Nauru, Timor-Leste, West Bank and Gaza, and Kosovo).
-//this file contains relevant ICTD data already
-append using "toAppend.dta"
-merge m:1 Country_Code year using "ICTD metadata.dta"
-drop if _merge==2
-drop _merge cntry
-//create new panel data identifier for appended dataset
-encode Country_Code, gen(cntry)
+//open and rename variables from new ICTD dataset
+use "Merged.dta", clear
+rename country Country
+rename source gov_data_source
+rename iso Country_Code
+rename reg Reg
+rename (rev_inc_sc rev_ex_sc rev_ex_gr_inc_sc rev_ex_gr_ex_sc tot_res_rev ///
+ tot_nres_rev_inc_sc tax_inc_sc tax_ex_sc resourcetaxes nrtax_inc_sc nrtax_ex_sc ///
+ direct_inc_sc_inc_rt direct_inc_sc_ex_rt direct_ex_sc_inc_rt direct_ex_sc_ex_rt ///
+ tax_income tax_res_income tax_nr_income tax_indiv tax_corp tax_res_corp /// 
+ tax_nr_corp tax_payr_workf tax_property tax_indirect res_indirect nr_indirect ///
+ tax_g_s tax_gs_general tax_gs_vat tax_gs_excises tax_trade tax_trade_import ///
+ tax_trade_export tax_other nontax res_nontax nr_nontax sc grants) (Total_Revenue_incl_SC ///
+ Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC Tot_Rev_excl_grant_excl_SC ///
+ Total_Resource_Revenue Total_Non_Res_Rev_incl_SC Tax_Revenue_incl_SC ///
+ Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
+ Non_Res_Tax_Rev_excl_SC Direct_incl_SC_incl_Res Direct_incl_SC_excl_Res ///
+ Direct_excl_SC_incl_Res Direct_excl_SC_excl_Res Income_Taxes ///
+ Income_Taxes_Res Income_Taxes_Non_Res PIT CIT CIT_Res CIT_Non_Res ///
+ Payroll_Workforce_Tax Property_Tax Indirect_Taxes Indirect_Taxes_Res ///
+ Indirect_Taxes_Non_Res Tax_Goods_and_Services Tax_Goods_and_Services_Gen ///
+ Value_Added_Tax Excise_Taxes Trade_Taxes Export_Taxes Import_Taxes Other_Taxes ///
+ Non_Tax_Revenue Non_Tax_Revenue_Res Non_Tax_Revenue_Non_Res Social_Contributions Grants)
+
+
+//reformat each tax measurement
+foreach v of varlist Total_Revenue_incl_SC ///
+ Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC Tot_Rev_excl_grant_excl_SC ///
+ Total_Resource_Revenue Total_Non_Res_Rev_incl_SC Tax_Revenue_incl_SC ///
+ Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
+ Non_Res_Tax_Rev_excl_SC Direct_incl_SC_incl_Res Direct_incl_SC_excl_Res ///
+ Direct_excl_SC_incl_Res Direct_excl_SC_excl_Res Income_Taxes ///
+ Income_Taxes_Res Income_Taxes_Non_Res PIT CIT CIT_Res CIT_Non_Res ///
+ Payroll_Workforce_Tax Property_Tax Indirect_Taxes Indirect_Taxes_Res ///
+ Indirect_Taxes_Non_Res Tax_Goods_and_Services Tax_Goods_and_Services_Gen ///
+ Value_Added_Tax Excise_Taxes Trade_Taxes Export_Taxes Import_Taxes Other_Taxes ///
+ Non_Tax_Revenue Non_Tax_Revenue_Res Non_Tax_Revenue_Non_Res Social_Contributions Grants {
+	format `v' %2.1f
+}
+
+drop if year<1990
+
+sort Country_Code year
+
+gen PIT_SC = PIT+Social_Contributions
+label var PIT_SC "PIT and Social Contributions"
+
+//syncing iso codes to WBG standard
+replace Country_Code="XKX" if Country_Code=="KSV"
+replace Country_Code="PSE" if Country_Code=="WBG"
+
+//merge in WDI data (prepared at top of dofile)
+merge m:1 Country_Code year using `WDIdata'
+drop if _merge !=3
+drop _merge
+
+gen ln_GDP_PC = ln(GDP_PC)
+label var ln_GDP_PC "Log of GDP Per Capita"
+
+gen ln_GDP_PC2 = ln_GDP_PC^2
+label var ln_GDP_PC2 "Log of GDP Per Capita Squared"
+
+// identifying outliers and removing
+foreach u in Total_Revenue_incl_SC ///
+ Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC Tot_Rev_excl_grant_excl_SC ///
+ Total_Resource_Revenue Total_Non_Res_Rev_incl_SC Tax_Revenue_incl_SC ///
+ Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
+ Non_Res_Tax_Rev_excl_SC Direct_incl_SC_incl_Res Direct_incl_SC_excl_Res ///
+ Direct_excl_SC_incl_Res Direct_excl_SC_excl_Res Income_Taxes ///
+ Income_Taxes_Res Income_Taxes_Non_Res PIT CIT CIT_Res CIT_Non_Res ///
+ Payroll_Workforce_Tax Property_Tax Indirect_Taxes Indirect_Taxes_Res ///
+ Indirect_Taxes_Non_Res Tax_Goods_and_Services Tax_Goods_and_Services_Gen ///
+ Value_Added_Tax Excise_Taxes Trade_Taxes Export_Taxes Import_Taxes Other_Taxes ///
+ Non_Tax_Revenue Non_Tax_Revenue_Res Non_Tax_Revenue_Non_Res Social_Contributions Grants PIT_SC { 
+	egen `u'_99 = pctile(`u'), p(99)
+	egen `u'_01 = pctile(`u'), p(1)
+	replace `u'=. if `u' > `u'_99 & `u'!=.
+	replace `u'=. if `u' < `u'_01 & `u'!=.
+	drop `u'_99 `u'_01
+}
+
+gen GDP_PC2 = GDP_PC^2
+
+//merge in GDPLCU data from excel version of ICTD data (prepped at top of this dofile)
+merge m:1 Country_Code year using `GDPLCU'
+drop if _merge !=3
+drop _merge
+
+
+//calculating Tax buoyancy and efficiency
+foreach u in Tax_Revenue_incl_SC Tax_Revenue Income_Taxes PIT CIT Property_Tax Value_Added_Tax Excise_Taxes Trade_Taxes Social_Contributions { 
+	gen `u'_lcu=(`u'/100)*GDP_LCU
+}
+
+encode Country_Code , gen(cntry)
+tsset cntry year
+gen delta_GDP=(GDP_LCU-l.GDP_LCU)/l.GDP_LCU
+
+foreach u in Tax_Revenue_incl_SC Tax_Revenue Income_Taxes PIT CIT Property_Tax Value_Added_Tax Excise_Taxes Trade_Taxes Social_Contributions { 
+gen delta_`u'=(`u'_lcu-l.`u'_lcu)/l.`u'_lcu
+gen `u'_buoyancy=delta_`u'/delta_GDP
+local u1=upper(substr("`u'",1,1))+substr("`u'",2,.)+ " Taxes - Buoyancy"
+label var `u'_buoyancy "`u1'"
+}
+
+label var Tax_Revenue_incl_SC_buoyancy "Tax Revenue incl. SC Buoyancy"
+label var Tax_Revenue_buoyancy "Tax Buoyancy"
+label var Income_Taxes_buoyancy "Income Taxes Buoyancy"
+label var Value_Added_Tax_buoyancy "VAT Buoyancy"
+label var Property_Tax_buoyancy "Property Taxes Buoyancy"
+label var Trade_Taxes_buoyancy "Trade Taxes Buoyancy"
+
+
+//tax effort calculations
+sort Country_Code year
+
+gen ln_Tax_Revenue = ln(Tax_Revenue)
+
+gen ln_Tax_Revenue_incl_SC = ln(Tax_Revenue_incl_SC)
+
+gen ln_Trade = ln(Trade)
+
+
+* prep for frontier analysis
+egen Country_ID=group(Country_Code), label
+xtset Country_ID year
+
+*When doing frontier analysis and the iterations don't converge we need to supply an initial value
+//just tax
+reg ln_Tax_Revenue ln_GDP_PC ln_GDP_PC2 ln_Trade
+matrix b0 = e(b), ln(e(rmse)^2) , .1
+matrix list b0
+
+frontier ln_Tax_Revenue ln_GDP_PC ln_GDP_PC2 ln_Trade, dist(hnormal) from(b0, copy)
+predict Tax_Effort, te
+
+label var Tax_Effort "Tax Effort"
+
+gen Tax_Capacity = Tax_Revenue/Tax_Effort
+
+label var Tax_Capacity "Tax Capacity (% of GDP)"
+
+gen Tax_Gap = Tax_Capacity - Tax_Revenue
+
+label var Tax_Gap "Tax Gap (% of GDP)"
+
+//tax including SC
+reg ln_Tax_Revenue_incl_SC ln_GDP_PC ln_GDP_PC2 ln_Trade
+matrix b0 = e(b), ln(e(rmse)^2) , .1
+matrix list b0
+
+frontier ln_Tax_Revenue_incl_SC ln_GDP_PC ln_GDP_PC2 ln_Trade, dist(hnormal) from(b0, copy)
+predict Tax_Effort_SC, te
+
+label var Tax_Effort_SC "Tax Effort (including SC)"
+
+gen Tax_Capacity_SC = Tax_Revenue_incl_SC/Tax_Effort_SC
+
+label var Tax_Capacity_SC "Tax Capacity including SC (% of GDP)"
+
+gen Tax_Gap_SC = Tax_Capacity_SC - Tax_Revenue_incl_SC
+
+label var Tax_Gap_SC "Tax Gap including SC (% of GDP)"
 
 foreach v of varlist _all{
 	local u: variable label `v'
-	local x = "[ICTD & GTT Data] " + "`u'"
+	local x = "[ICTD & GTT] " + "`u'"
 	label var `v' "`x'"
 }
 
@@ -86,9 +250,9 @@ label var Country "country"
 
 save "Master Dataset.dta", replace
 
-/***********************/
-/**********WDI**********/
-/***********************/
+/********************************/
+/**World Development Indicators**/
+/********************************/
 
 //manufacturing
 
@@ -306,11 +470,12 @@ foreach v of varlist _all{
 label var country "Economy"
 label var year "Year"
 rename country Country
-replace Country="Cape Verde" if Country=="Cabo Verde"
-replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
-replace Country="Guyana" if Country=="Guyana, CR"
-replace Country="Venezuela, RB" if Country=="Venezuela, R.B."
-replace Country="Swaziland" if Country=="Eswatini"
+////////////////////////////////////////////////////////////
+
+changing country names
+
+////////////////////////////////////////////////////////////
+
 
 save "World Bank Enterprise Surveys.dta", replace
 
@@ -371,6 +536,38 @@ replace percentregistered=temp11
 replace yearsinformal=temp12
 replace informalconstraint=temp13
 drop temp1 temp2 temp3 temp4 temp5 temp6 temp7 temp8 temp9 temp10 temp11 temp12 temp13 keepyear surveyyear
+
+save "Master Dataset.dta", replace
+
+//bribery
+
+import excel "Enterprise Surveys Bribery Incidence.xlsx", ///
+ sheet("Data") firstrow clear
+
+rename (SeriesName CountryName CountryCode) (BriberyIncidence Country Country_Code)
+
+drop SeriesCode
+drop in 222
+drop in 221
+drop in 220
+drop in 219
+drop in 218
+
+reshape long YR, i(Country) j(year)
+
+drop BriberyIncidence
+rename YR BriberyIncidence
+lab var BriberyIncidence "[Enterprise Surveys] % of firms experiencing at least one bribe payment request"
+
+replace BriberyIncidence="" if BriberyIncidence==".."
+destring BriberyIncidence, replace
+
+save "Enterprise Surveys Bribery Incidence.dta", replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using "Enterprise Surveys Bribery Incidence.dta"
+drop if _merge==2
+drop _merge
 
 save "Master Dataset.dta", replace
 
@@ -475,9 +672,9 @@ foreach var in bhrrating brerating dprating emcaverage ermrating eqprurating ///
 
 save "Master Dataset.dta", replace
 
-/****************************************/
-/*****Tax Incentives & Transparency******/
-/****************************************/
+/*************************/
+/*****Tax Incentives******/
+/*************************/
 
 //this dataset is at the sector-year level and will have to be summarized
 //to be merged with the country-year level master dataset.
@@ -1028,9 +1225,9 @@ sort Country year
 
 save "Master Dataset.dta", replace
 
-/*********************/
-/*****Tax Treaty******/
-/*********************/
+/**************************/
+/**Actionaid Tax Treaties**/
+/**************************/
 
 //this dataset is at the treaty-year level and will have to be summarized
 //to be merged with the country-year level master dataset.
@@ -1151,6 +1348,10 @@ drop if _var5=="Aggregate expenditure out-turn compared to original approved bud
 
 //extracting dates from strings in various formats
 egen Date2 = sieve(Date), keep(numeric)
+//correcting a couple differently formatted entries
+replace Date2="1711" if Date2=="172011"
+replace Date2="1611" if Date2=="162011"
+//adjusting to a standard format
 replace Date2=usubstr(Date2,-2,2) if strlen(Date2)==2
 replace Date2=usubstr(Date2,-4,2) if strlen(Date2)>2
 destring Date2, replace
@@ -1215,6 +1416,32 @@ replace Country="Timor-Leste" if Country=="Timor Leste"
 
 //stripping the variables down to a few key, tax-related variables
 keep Country year PI_13_1 PI_13_2 PI_13_3 PI_14_1 PI_14_2 PI_14_3 PI_15_1 PI_15_2 PI_15_3
+
+//filling out missing years
+gen assessmentyear=1
+sort Country year
+
+egen cntry=group(Country)
+tsset cntry year
+
+tsfill, full
+
+replace assessmentyear=0 if assessmentyear!=1
+
+local yearcounter = 2000
+while `yearcounter'<=2018 {
+	foreach var of varlist PI* {
+		replace `var' = l.`var' if `var'==. & assessmentyear==0 & year==`yearcounter'
+	}
+	local yearcounter = `yearcounter' + 1
+}
+local yearcounter = 2000
+while `yearcounter'<=2018 {
+	by cntry, sort: replace Country = Country[_n-1] if assessmentyear==0 & year==`yearcounter'
+	local yearcounter = `yearcounter' + 1
+}
+drop assessmentyear cntry
+keep if Country!=""
 
 save "PEFA 2011.dta", replace
 
@@ -2954,9 +3181,9 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/***********************/
-/*********FCVs**********/
-/***********************/
+/****************************/
+/***Harmonized List of FCV***/
+/****************************/
 
 import excel "Historical FCV.xlsx", firstrow cellrange(A1:C530) clear
 
@@ -3011,9 +3238,9 @@ drop _merge TimeCode
 
 save "Master Dataset.dta", replace
 
-/*****************************/
-/*IMF CENTRAL GOVERNMENT DEBT*/
-/*****************************/
+/***********************/
+/****IMF Public DEBT****/
+/***********************/
 
 import excel "imf-dm-export-20190612.xls", sheet("DEBT1") firstrow clear
 rename B publicdebtimf
@@ -3053,9 +3280,9 @@ label var publicdebtimf "[IMF] Public Debt (% of GDP)"
 
 save "Master Dataset.dta", replace
 
-/***************************/
-/*SOCIAL SAFETY NETS in SSA*/
-/***************************/
+/************************/
+/******Aspire (SSA)******/
+/************************/
 
 import excel "SSA social safety nets benefit incidence, poorest quintile.xlsx", ///
  sheet("Data") firstrow case(lower) clear
@@ -4960,9 +5187,9 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/*************************/
-/******Income Levels******/
-/*************************/
+/****************************/
+/******WB Income Levels******/
+/****************************/
 
 import excel "OGHIST.xls", sheet("Country Analytical History") cellrange(A6:AF229) clear
 drop B C D E
@@ -4993,39 +5220,6 @@ drop _merge
 sort Country year
 save "Master Dataset.dta", replace
 
-/******************************************/
-/***ENTERPRISE SURVEYS BRIBERY INCIDENCE***/
-/******************************************/
-
-import excel "Enterprise Surveys Bribery Incidence.xlsx", ///
- sheet("Data") firstrow clear
-
-rename (SeriesName CountryName CountryCode) (BriberyIncidence Country Country_Code)
-
-drop SeriesCode
-drop in 222
-drop in 221
-drop in 220
-drop in 219
-drop in 218
-
-reshape long YR, i(Country) j(year)
-
-drop BriberyIncidence
-rename YR BriberyIncidence
-lab var BriberyIncidence "[Enterprise Surveys] % of firms experiencing at least one bribe payment request"
-
-replace BriberyIncidence="" if BriberyIncidence==".."
-destring BriberyIncidence, replace
-
-save "Enterprise Surveys Bribery Incidence.dta", replace
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Enterprise Surveys Bribery Incidence.dta"
-drop if _merge==2
-drop _merge
-
-save "Master Dataset.dta", replace
 
 /************************/
 /***OECD AIR EMISSIONS***/
@@ -5168,9 +5362,9 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/***********************/
-/***UNCTAD ICT SECTOR***/
-/***********************/
+/************************/
+/*******UNCTAD ICT*******/
+/************************/
 
 import delimited us_ictproductionsector_06320563693489.csv, clear
 
@@ -5215,9 +5409,9 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/**********************/
-/***WDI CUSTOMS DATA***/
-/**********************/
+/*****************/
+/***WDI CUSTOMS***/
+/*****************/
 
 import excel "WDI Customs data.xlsx", sheet("3908d76d-d7c5-4e3d-b2f4-4593976") ///
  cellrange(A1:I6077) firstrow clear
@@ -5346,9 +5540,9 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/*******************/
-/***FINSTATS 2019***/
-/*******************/
+/**********************/
+/***WB FINSTATS 2019***/
+/**********************/
 
 use "Master Dataset.dta", clear
 merge m:1 Country_Code year using "FinStats 2019 data.dta"
@@ -5441,9 +5635,9 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/************************/
-/***IMF FUEL SUBSIDIES***/
-/************************/
+/**************************/
+/***IMF Energy subsidies***/
+/**************************/
 
 import excel "IMF fuel tax gap database.xlsx", sheet("By product (2015)") ///
  cellrange(A1:R210) firstrow clear
