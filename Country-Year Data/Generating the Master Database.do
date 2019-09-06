@@ -131,6 +131,8 @@ merge m:1 Country_Code year using `WDIdata'
 drop if _merge !=3
 drop _merge
 
+//the rest of this section was first developed by Sebastian James
+
 gen ln_GDP_PC = ln(GDP_PC)
 label var ln_GDP_PC "Log of GDP Per Capita"
 
@@ -187,16 +189,12 @@ label var Value_Added_Tax_buoyancy "VAT Buoyancy"
 label var Property_Tax_buoyancy "Property Taxes Buoyancy"
 label var Trade_Taxes_buoyancy "Trade Taxes Buoyancy"
 
-
 //tax effort calculations
 sort Country_Code year
 
 gen ln_Tax_Revenue = ln(Tax_Revenue)
-
 gen ln_Tax_Revenue_incl_SC = ln(Tax_Revenue_incl_SC)
-
 gen ln_Trade = ln(Trade)
-
 
 * prep for frontier analysis
 egen Country_ID=group(Country_Code), label
@@ -212,13 +210,9 @@ frontier ln_Tax_Revenue ln_GDP_PC ln_GDP_PC2 ln_Trade, dist(hnormal) from(b0, co
 predict Tax_Effort, te
 
 label var Tax_Effort "Tax Effort"
-
 gen Tax_Capacity = Tax_Revenue/Tax_Effort
-
 label var Tax_Capacity "Tax Capacity (% of GDP)"
-
 gen Tax_Gap = Tax_Capacity - Tax_Revenue
-
 label var Tax_Gap "Tax Gap (% of GDP)"
 
 //tax including SC
@@ -230,13 +224,9 @@ frontier ln_Tax_Revenue_incl_SC ln_GDP_PC ln_GDP_PC2 ln_Trade, dist(hnormal) fro
 predict Tax_Effort_SC, te
 
 label var Tax_Effort_SC "Tax Effort (including SC)"
-
 gen Tax_Capacity_SC = Tax_Revenue_incl_SC/Tax_Effort_SC
-
 label var Tax_Capacity_SC "Tax Capacity including SC (% of GDP)"
-
 gen Tax_Gap_SC = Tax_Capacity_SC - Tax_Revenue_incl_SC
-
 label var Tax_Gap_SC "Tax Gap including SC (% of GDP)"
 
 foreach v of varlist _all{
@@ -290,7 +280,7 @@ format informal %9.2f
 local yearcrawl = 1990
 gen currentdata=.
 gen useornot=.
-while `yearcrawl'<=2016 {
+while `yearcrawl'<=2017 {
 	replace currentdata=informal if year==`yearcrawl' & hasdata==1
 	replace currentdata=. if year!=`yearcrawl'
 	cap drop currentall
@@ -470,17 +460,25 @@ foreach v of varlist _all{
 label var country "Economy"
 label var year "Year"
 rename country Country
-////////////////////////////////////////////////////////////
 
-changing country names
+//conforming the the naming in the country codes file
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Egypt" if Country=="Egypt, Arab Rep."
+replace Country="Guyana" if Country=="Guyana, CR"
+replace Country="North Macedonia" if Country=="Macedonia, FYR"
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Venezuela, RB" if Country=="Venezuela, R.B."
+replace Country="Yemen" if Country=="Yemen, Rep."
 
-////////////////////////////////////////////////////////////
-
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
 
 save "World Bank Enterprise Surveys.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "World Bank Enterprise Surveys.dta"
+merge m:1 Country_Code year using "World Bank Enterprise Surveys.dta"
 drop if _merge==2
 drop _merge
 
@@ -498,7 +496,7 @@ replace surveyyear=1 if managementtime<. | firmsvisited<. | numbervisits<. | ope
 local yearcrawl = 2006
 gen yearcount = 0
 gen keepyear = 0
-while `yearcrawl'<=2016 {
+while `yearcrawl'<=2017 {
 	replace yearcount=1 if year==`yearcrawl'
 	cap drop howmanysurveys
 	bysort Country yearcount: egen howmanysurveys=count(surveyyear)
@@ -724,21 +722,35 @@ foreach v of varlist _all{
 label var year "year"
 label var Country "country"
 
+//adjusting some country names
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Cabo Verde" if Country=="Cape Verde"
+replace Country="Cayman Islands" if Country=="Cayman Island"
 replace Country="Congo, Dem. Rep." if Country=="Congo, Democratic Republic of"
 replace Country="Congo, Rep." if Country=="Congo, Republic of"
-replace Country="Egypt, Arab Rep." if Country== "Egypt"
 replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong SAR"
 replace Country="Lao PDR" if Country=="Lao"
 replace Country="Macao SAR, China" if Country=="Macau"
+replace Country="North Macedonia" if Country=="Macedonia"
+replace Country="St. Lucia" if Country=="Saint Lucia"
 replace Country="Slovak Republic" if Country=="Slovak Rep."
 replace Country="Korea, Rep." if Country=="South Korea"
-replace Country="Venezuela, RB" if Country=="Venezuela"
-replace Country="Macedonia, FYR" if Country=="Macedonia"
+replace Country="Eswatini" if Country=="Swaziland"
+replace Country="Gambia, The" if Country=="Gambia"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "Tax incentives and transparency.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:m Country year using "Tax incentives and transparency.dta"
+merge m:m Country_Code year using "Tax incentives and transparency.dta"
 drop if _merge==2
 drop _merge
 
@@ -890,16 +902,28 @@ foreach v of varlist _all{
 label var year "year"
 label var Country "country"
 label var Country_Code "code"
-replace Country="Cape Verde" if Country=="Cabo Verde"
+
 replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
-replace Country="Cape Verde" if Country=="Cabo Verde"
-replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Egypt" if Country=="Egypt, Arab Rep."
+replace Country="Iran" if Country=="Iran, Islamic Rep."
+replace Country="North Macedonia" if Country=="Macedonia, FYR"
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Syria" if Country=="Syrian Arab Republic"
 replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
+replace Country="Yemen" if Country=="Yemen, Rep."
+//drop a partly Non-ISO code
+drop Country_Code
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "Doing Business Historical - Paying Taxes.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "Doing Business Historical - Paying Taxes.dta"
+merge m:1 Country_Code year using "Doing Business Historical - Paying Taxes.dta"
 drop if _merge==2
 drop _merge
 
@@ -1187,13 +1211,21 @@ label var year "year"
 
 decode country, gen(Country)
 drop country
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
+
+replace Country="Cabo Verde" if Country=="Cape Verde"
 replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
+replace Country="Eswatini" if Country=="Swaziland"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "Afrobaro_merged.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "Afrobaro_merged.dta"
+merge m:1 Country_Code year using "Afrobaro_merged.dta"
 drop if _merge==2
 drop _merge
 
@@ -1285,11 +1317,19 @@ replace Country = "Congo, Rep." if Country=="Congo (Rep.)"
 replace Country = "Gambia, The" if Country=="Gambia"
 replace Country = "Cote d'Ivoire" if Country=="Ivory Coast"
 replace Country = "Lao PDR" if Country=="Laos"
+replace Country = "Cabo Verde" if Country=="Cape Verde"
+replace Country = "Eswatini" if Country=="Swaziland"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "Tax Treaties (Country Year Level).dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "Tax Treaties (Country Year Level).dta"
+merge m:1 Country_Code year using "Tax Treaties (Country Year Level).dta"
 drop if _merge==2
 drop _merge
 label var numberoftreaties "[Tax Treaty] Number of tax treaties for this country for this year"
@@ -1306,7 +1346,7 @@ cap gen weighted_mean_source = Sourceindex_year_mean * numberoftreaties
 cap gen weighted_mean_WHT = WHTrates_year_mean * numberoftreaties
 local y = 1990
 cap gen yearcounted = 0
-while `y'<=2016 {
+while `y'<=2017 {
 	replace yearcounted = 1 if year==`y'
 	cap drop running_mean_source running_mean_WHT running_min_source running_min_WHT treatiessofar
 	bysort Country yearcounted: egen running_mean_source = sum(weighted_mean_source)
@@ -1398,21 +1438,20 @@ label var Country "country"
 
 drop if Country=="Bosnia & Herzegovina-BiH" | Country=="Bosnia & Herzegovina-DB" | Country=="Bosnia & Herzegovina-RS"
 replace Country="Bosnia and Herzegovina" if Country=="Bosnia & Herzegovina-FBiH"
-replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Cabo Verde" if Country=="Cape Verde"
 replace Country="Congo, Dem. Rep." if Country=="Congo, Dem. Rep. of"
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
 replace Country="Antigua and Barbuda" if Country=="Antigua & Barbuda"
 replace Country="Aruba" if Country=="Aruba (Neth.)"
 replace Country="Bahamas, The" if Country=="Bahamas"
 replace Country="Congo, Rep." if Country=="Congo, Republic of"
 replace Country="Fiji" if Country=="Fiji Islands"
 replace Country="Guinea-Bissau" if Country=="Guinea Bissau"
-replace Country="Macedonia, FYR" if Country=="Macedonia"
-replace Country="Morocco" if Country=="Morrocco"
-replace Country="Syrian Arab Republic" if Country=="Syria"
-replace Country="Yemen, Rep." if Country=="Yemen"
-replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="North Macedonia" if Country=="Macedonia" | Country=="Macedonia, FYR"
 replace Country="Timor-Leste" if Country=="Timor Leste"
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Eswatini" if Country=="Swaziland"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia"
+drop if Country=="Morrocco"
 
 //stripping the variables down to a few key, tax-related variables
 keep Country year PI_13_1 PI_13_2 PI_13_3 PI_14_1 PI_14_2 PI_14_3 PI_15_1 PI_15_2 PI_15_3
@@ -1443,10 +1482,16 @@ while `yearcounter'<=2018 {
 drop assessmentyear cntry
 keep if Country!=""
 
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
+
 save "PEFA 2011.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "PEFA 2011.dta"
+merge m:1 Country_Code year using "PEFA 2011.dta"
 drop if _merge==2
 drop _merge
 
@@ -1509,12 +1554,7 @@ sort Country year
 save "Master Dataset.dta", replace
 
 /*tidying up some Region discrepancies*/
-tab Reg Region_Code
 replace Reg=3 if Country=="St. Vincent and the Grenadines"
-replace Region_Code="ECA" if Country=="Turkey"
-replace Region_Code="MENA" if Country=="Djibouti"
-replace Region_Code="SSA" if Country=="Mauritania"
-tab Reg Region_Code
 
 save "Master Dataset.dta", replace
 
@@ -1524,10 +1564,16 @@ save "Master Dataset.dta", replace
 
 /*Import Excel*/
 import excel "DAIforweb.xlsx", sheet("Sheet1") firstrow case(lower) clear
- 
-replace country="Cape Verde" if country=="Cabo Verde"
 
 rename country Country
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Egypt" if Country=="Egypt, Arab Rep."
+replace Country="Iran" if Country=="Iran, Islamic Rep."
+replace Country="North Macedonia" if Country=="Macedonia, FYR"
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Eswatini" if Country=="Swaziland"
+replace Country="Syria" if Country=="Syrian Arab Republic"
+replace Country="Yemen" if Country=="Yemen, Rep."
 
 foreach v of varlist daigovernmentsubindex daipeoplesubindex daibusinesssubindex ///
  digitaladoptionindex {
@@ -1536,10 +1582,16 @@ foreach v of varlist daigovernmentsubindex daipeoplesubindex daibusinesssubindex
 	label var `v' "`x'"
 }
 
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
+
 save "DAI dataset.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "DAI dataset.dta"
+merge m:1 Country_Code year using "DAI dataset.dta"
 
 drop if _merge==2
 drop _merge
@@ -3172,10 +3224,18 @@ lab variable year ""
 lab variable Country ""
 lab variable gsmaReg ""
 
+replace Country="Central African Republic" if Country=="Central Africa Republic"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
+
 save "GSMA SSA Dataset.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "GSMA SSA Dataset.dta"
+merge m:1 Country_Code year using "GSMA SSA Dataset.dta"
 drop if _merge==2
 drop _merge
 
@@ -3192,14 +3252,19 @@ replace Country="Guinea-Bissau" if Country=="Guinea Bissau"
 replace Country="Lao PDR" if Country=="Lao, PDR"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia, FS"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia FS"
-replace Country="Syrian Arab Republic" if Country=="Syria"
-replace Country="Yemen, Rep." if Country=="Yemen"
 replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Eswatini" if Country=="Swaziland"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "FCV.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "FCV.dta"
+merge m:1 Country_Code year using "FCV.dta"
 drop if _merge==2
 drop _merge
 
@@ -3248,19 +3313,13 @@ rename DEBTofGDP Country
 drop in 1
 gen year=2015
 
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
-replace Country="Syrian Arab Republic" if Country=="Syria"
-replace Country="Yemen, Rep." if Country=="Yemen"
-replace Country="Iran, Islamic Rep." if Country=="Iran"
-replace Country="Cape Verde" if Country=="Cabo Verde"
 replace Country="China" if Country=="China, People's Republic of"
 replace Country="Congo, Dem. Rep." if Country=="Congo, Dem. Rep. of the"
 replace Country="Congo, Rep." if Country=="Congo, Republic of "
 replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
-replace Country="Swaziland" if Country=="Eswatini"
 replace Country="Hong Kong SAR, China" if Country=="Hong Kong SAR"
-replace Country="Korea, Rep." if Country=="Lao P.D.R."
-replace Country="Lao PDR" if Country=="Korea, Republic of"
+replace Country="Korea, Rep." if Country=="Korea, Republic of"
+replace Country="Lao PDR" if Country=="Lao P.D.R."
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia, Fed. States of"
 replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
 replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
@@ -3268,11 +3327,20 @@ replace Country="St. Lucia" if Country=="Saint Lucia"
 replace Country="South Sudan" if Country=="South Sudan, Republic of"
 replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
 replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="North Macedonia" if Country=="North Macedonia "
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Brunei" if Country=="Brunei Darussalam"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "IMF Central Government Debt.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "IMF Central Government Debt.dta"
+merge m:1 Country_Code year using "IMF Central Government Debt.dta"
 drop if _merge==2
 drop _merge
 
@@ -3334,14 +3402,18 @@ merge m:1 Country year using "SSA social safety nets benefit incidence, poorest 
 drop _merge
 
 ***Prepping to be merged into Master Dataset*
-drop if year>2016
-replace Country="Cape Verde" if Country=="Cabo Verde"
-replace Country="Swaziland" if Country=="Eswatini"
+drop if year>2017
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "SSA social safety nets coverage and benefit incidence, poorest quintile.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "SSA social safety nets coverage and benefit incidence, poorest quintile.dta"
+merge m:1 Country_Code year using "SSA social safety nets coverage and benefit incidence, poorest quintile.dta"
 drop if _merge==2
 drop _merge
 
@@ -3353,6 +3425,99 @@ save "Master Dataset.dta", replace
 /*****************/
 /*LATINOBAROMETRO*/
 /*****************/
+
+clear all
+set more off
+
+
+/*LB 2017*/
+use "Latinobarometro_2017.dta", clear
+rename idenpa Country
+
+keep Country P1ST P2ST P3STGBS P4STGBS P5STGBS P6STICC1 P10ST S3 wt
+
+foreach v of varlist P1ST P2ST P3STGBS P4STGBS P5STGBS P6STICC1 P10ST S3 {
+
+	replace `v'=. if `v'<0
+
+}
+
+foreach u of varlist P1ST-S3 {
+	local l`u' : variable label `u'
+		if `"`l`u''"' == "" {
+		local l`u' "`u'"
+	}
+}
+
+local list "P1ST P2ST P3STGBS P4STGBS P5STGBS P6STICC1 P10ST S3"
+
+foreach var of local list {
+	levelsof `var', local(`var'_levels)
+	foreach val of local `var'_levels {
+		local `var'vl`val' : label `var' `val'
+	}
+}
+
+rename (P1ST P2ST P3ST P4STGBS P5STGBS P6STICC1 P10ST S3) (lifesatisfaction ///
+ countryprogress countryproblem econsitnow econsitpast econsitfuture benofpowerful ///
+ lackfood)
+
+ 
+foreach v of varlist lifesatisfaction-lackfood {
+
+	tab `v', gen(`v'_fac)
+
+}
+
+collapse (mean) lifesatisfaction-lackfood_fac4 [pweight=wt], by(Country)
+
+foreach v of varlist lifesatisfaction-lackfood_fac4 {
+
+	label var `v' "[LB]`l`v''"
+}
+
+ foreach variable of local list {
+	 foreach value of local `var'_levels{
+		 label variable `variable'`value' "`l`variable'': `yearvl`value''"
+	 }
+}
+
+lab var lifesatisfaction_fac1 "[LB] How satisfied are you with your life? % answering  1 (Very) "
+lab var lifesatisfaction_fac2 "[LB] How satisfied are you with your life? % answering  2 (Quite) "
+lab var lifesatisfaction_fac3 "[LB] How satisfied are you with your life? % answering  3 (Not very) "
+lab var lifesatisfaction_fac4 "[LB] How satisfied are you with your life? % answering  4 (Not at all) "
+
+lab var countryprogress_fac1 "[LB] What is the state of progress in [country]? % answering  1 (Progressing) "
+lab var countryprogress_fac2 "[LB] What is the state of progress in [country]? % answering  2 (Standstill) "
+lab var countryprogress_fac3 "[LB] What is the state of progress in [country]? % answering  3 (Declining) "
+
+lab var econsitnow_fac1 "[LB] What is the country's economic situation? % answering  1 (Very good) "
+lab var econsitnow_fac2 "[LB] What is the country's economic situation? % answering  2 (Good) "
+lab var econsitnow_fac3 "[LB] What is the country's economic situation? % answering  3 (About average) "
+lab var econsitnow_fac4 "[LB] What is the country's economic situation? % answering  4 (Bad) "
+lab var econsitnow_fac5 "[LB] What is the country's economic situation? % answering  5 (Very bad) "
+
+lab var econsitpast_fac1 "[LB] What was the country's economic situation a year ago? % answering  1 (Much better) "
+lab var econsitpast_fac2 "[LB] What was the country's economic situation a year ago? % answering  2 (A little better) "
+lab var econsitpast_fac3 "[LB] What was the country's economic situation a year ago? % answering  3 (The same) "
+lab var econsitpast_fac4 "[LB] What was the country's economic situation a year ago? % answering  4 (A little worse) "
+lab var econsitpast_fac5 "[LB] What was the country's economic situation a year ago? % answering  5 (Much worse) "
+
+lab var econsitfuture_fac1 "[LB] What will be the country's economic situation in a year? % answering  1 (Much better) "
+lab var econsitfuture_fac2 "[LB] What will be the country's economic situation in a year? % answering  2 (A little better) "
+lab var econsitfuture_fac3 "[LB] What will be the country's economic situation in a year? % answering  3 (The same) "
+lab var econsitfuture_fac4 "[LB] What will be the country's economic situation in a year? % answering  4 (A little worse) "
+lab var econsitfuture_fac5 "[LB] What will be the country's economic situation in a year? % answering  5 (Much worse) "
+
+lab var lackfood_fac1 "[LB] Last year, how often have you/family lacked food? 1 (Never)"
+lab var lackfood_fac2 "[LB] Last year, how often have you/family lacked food? 2 (Rarely)"
+lab var lackfood_fac3 "[LB] Last year, how often have you/family lacked food? 3 (Sometimes)"
+lab var lackfood_fac4 "[LB] Last year, how often have you/family lacked food? 4 (Often)"
+
+gen year=2017
+
+tempfile lb17
+save `lb17', replace
 
 /*LB 2016*/
 use "Latinobarometro_2016.dta", clear
@@ -3466,7 +3631,8 @@ lab var lackfood_fac4 "[LB] Last year, how often have you/family lacked food? 4 
 
 gen year=2016
 
-save "Latinobarometro_dataset_2016.dta", replace
+tempfile lb16
+save `lb16', replace
 
 /*LB 2015*/
 use "Latinobarometro_2015.dta", clear
@@ -3588,7 +3754,8 @@ lab var refusetaxes_fac2 "[LB] Have you ever refused to pay taxes to the governm
 
 gen year=2015
 
-save "Latinobarometro_dataset_2015.dta", replace
+tempfile lb15
+save `lb15', replace
 
 /*LB 2013*/
 use "Latinobarometro_2013.dta", clear
@@ -3726,7 +3893,8 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
 
 gen year=2013
 
-save "Latinobarometro_dataset_2013.dta", replace
+tempfile lb13
+save `lb13', replace
 
 /*LB 2011*/
 use "Latinobarometro_2011.dta", clear
@@ -3846,7 +4014,8 @@ lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4
  
 gen year=2011
 
-save "Latinobarometro_dataset_2011.dta", replace
+tempfile lb11
+save `lb11', replace
 
 /*LB 2010*/
 use "Latinobarometro_2010.dta", clear
@@ -3980,7 +4149,8 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
  
 gen year=2010
  
-save "Latinobarometro_dataset_2010.dta", replace
+tempfile lb10
+save `lb10', replace
 
 /*LB 2009*/
 use "Latinobarometro_2009.dta", clear
@@ -4106,7 +4276,8 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
 
 gen year=2009
  
-save "Latinobarometro_dataset_2009.dta", replace
+tempfile lb09
+save `lb09', replace
 
 /*LB 2008*/
 use "Latinobarometro_2008.dta", clear
@@ -4214,7 +4385,8 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
  
 gen year=2008
  
-save "Latinobarometro_dataset_2008.dta", replace
+tempfile lb08
+save `lb08', replace
 
 /*LB 2007*/
 use "Latinobarometro_2007.dta", clear
@@ -4320,7 +4492,8 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
  
 gen year=2007
  
-save "Latinobarometro_dataset_2007.dta", replace
+tempfile lb07
+save `lb07', replace
 
 /*LB 2006*/
 use "Latinobarometro_2006.dta", clear
@@ -4424,7 +4597,8 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
  
 gen year=2006
  
-save "Latinobarometro_dataset_2006.dta", replace
+tempfile lb06
+save `lb06', replace
 
 /*LB 2005*/
 use "Latinobarometro_2005.dta", clear
@@ -4525,7 +4699,8 @@ lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy
 
 gen year=2005
 
-save "Latinobarometro_dataset_2005.dta", replace
+tempfile lb05
+save `lb05', replace
 
 /*LB 2004*/
 use "Latinobarometro_2004.dta"
@@ -4630,7 +4805,8 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
 
 gen year=2004
  
-save "Latinobarometro_dataset_2004.dta", replace
+tempfile lb04
+save `lb04', replace
 
 /*LB 2003*/
 use "Latinobarometro_2003.dta"
@@ -4727,7 +4903,8 @@ lab var econfunction_fac4 "[LB] How satisfied are you with the country's economy
 
 gen year=2003
  
-save "Latinobarometro_dataset_2003.dta", replace
+tempfile lb03
+save `lb03', replace
 
 /*LB 2002*/
 use "Latinobarometro_2002.dta", clear
@@ -4816,7 +4993,8 @@ lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4
  
 gen year=2002
  
-save "Latinobarometro_dataset_2002.dta", replace
+tempfile lb02
+save `lb02', replace
 
 /*LB 2001*/
 use "Latinobarometro_2001.dta", clear
@@ -4898,7 +5076,8 @@ lab var incdisfair_fac4 "[LB] How fair is the income distribution? % answering 4
  
 gen year=2001
  
-save "Latinobarometro_dataset_2001.dta", replace
+tempfile lb01
+save `lb01', replace
 
 /*LB 2000*/
 use "Latinobarometro_2000.dta", clear
@@ -4989,20 +5168,32 @@ lab var scalepoorrichnow_fac10 "[LB] Scale of where you see yourself on income d
  
 gen year=2000
  
-save "Latinobarometro_dataset_2000.dta", replace
+tempfile lb00
+save `lb00', replace
 
 /***************************************/
 /*Append Latinobarometro files together*/
 /***************************************/
 
-use "Latinobarometro_dataset_2016.dta", clear
+use `lb16', clear
+append using `lb15'
+append using `lb13'
+append using `lb11'
+append using `lb10'
+append using `lb09'
+append using `lb08'
+append using `lb07'
+append using `lb06'
+append using `lb05'
+append using `lb04'
+append using `lb03'
+append using `lb02'
+append using `lb01'
+append using `lb00'
+append using `lb17'
 
-foreach u in 2015 2013 2011 2010 2009 2008 2007 2006 2005 2004 2003 2002 2001 ///
- 2000 {
-
-	append using "Latinobarometro_dataset_`u'.dta"
- 
-}
+order Country year, first
+sort Country year
 
 /*Consolidate variables*/
 keep Country year lifesatisfaction* countryprogress* econsitnow* econsitpast* ///
@@ -5026,30 +5217,28 @@ lab var benofpowerful_fac1 "[LB] [Country] is run for the benefit of the powerfu
 lab var benofpowerful_fac2 "[LB] [Country] is run for the benefit of the powerful. % answering Disagree or Strongly disagree "
 
 decode Country, gen(country)
+replace country="Venezuela, RB" if country=="Venezuela"
+replace country="Dominican Republic" if country=="Dominican Rep."
 drop Country
 rename country Country
-replace Country="Venezuela, RB" if Country=="Venezuela"
-replace Country="Dominican Republic" if Country=="Dominican Rep."
 
-order Country year, first
-sort Country year
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "Latinobarometro_dataset_combined.dta", replace
 
+/*Merge with Master Dataset*/
+
 use "Master Dataset.dta", clear
-merge m:1 Country year using "Latinobarometro_dataset_combined.dta"
+merge m:1 Country_Code year using "Latinobarometro_dataset_combined.dta"
 drop if _merge==2
 drop _merge
 
-tsset cntry year
-
-foreach var of varlist lifesatisfaction-scalepoorrichnow_fac10 {
- 
-	replace `var'=l.`var' if `var'==.
- 
- }
-
 save "Master Dataset.dta", replace
+
 
 /****************************/
 /*****MIMIC Informality******/
@@ -5085,20 +5274,29 @@ rename AB Shadow_Economy2015
 
 reshape long Shadow_Economy, i(Country) j(year)
 
-replace Country="Cape Verde" if Country=="Cabo Verde"
 replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
-replace Country="Egypt, Arab Rep." if Country=="Egypt, Arab. Rep."
-replace Country="Iran, Islamic Rep." if Country=="Iran, Islam Rep."
+replace Country="Egypt" if Country=="Egypt, Arab. Rep."
+replace Country="Iran" if Country=="Iran, Islam Rep."
 replace Country="Lao PDR" if Country=="Laos"
 replace Country="Netherlands" if Country=="Netherlands, The"
-replace Country="Syrian Arab Republic" if Country=="Syrian Arab. Rep."
+replace Country="Syria" if Country=="Syrian Arab. Rep."
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Eswatini" if Country=="Swaziland"
+replace Country="Yemen" if Country=="Yemen, Rep."
 
 label var Shadow_Economy "[MIMIC] Informality calculations by IMF's Leandro Medina and Friedrich Schneider"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "MIMIC Informality.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "MIMIC Informality.dta"
+merge m:1 Country_Code year using "MIMIC Informality.dta"
 drop if _merge==2
 drop _merge
 
@@ -5136,14 +5334,20 @@ foreach v of varlist WageBill_PubExp WageBill_GDP{
 	label var `v' "`x'"
 	
 }
-replace Country="Swaziland" if Country=="Eswatini"
 replace Country="Sao Tome and Principe" if Country=="São Tomé and Principe"
+replace Country="Egypt" if Country=="Egypt, Arab Rep."
+replace Country="Russia" if Country=="Russian Federation"
 
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "WWBI public sector wage bill.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "WWBI public sector wage bill.dta"
+merge m:1 Country_Code year using "WWBI public sector wage bill.dta"
 drop if _merge==2
 drop _merge
 
@@ -5162,7 +5366,7 @@ drop countrycode unitname unitcode ïcountryname
 //to be done the following way, since the year variable is a string.
 local yearcounter=1990
 gen keepthisrow=0
-while `yearcounter'<=2016 {
+while `yearcounter'<=2017 {
 	replace keepthisrow=1 if year=="`yearcounter'"
 	local yearcounter = `yearcounter' + 1
 }
@@ -5263,10 +5467,10 @@ save "Master Dataset.dta", replace
 import excel "Data_Extract_From_World_Development_Indicators - environment and climate change.xlsx", ///
  sheet("Data") firstrow clear
 
-drop YR1969-YR1989 YR2017 YR2018
+drop YR1969-YR1989 YR2018
 drop SeriesCode
 
-foreach v of varlist YR1990-YR2016 {
+foreach v of varlist YR1990-YR2017 {
 
 	replace `v'="" if `v'==".."
 	destring `v', replace
@@ -5274,6 +5478,7 @@ foreach v of varlist YR1990-YR2016 {
 }
 
 drop if CountryCode==""
+rename CountryCode Country_Code
 
 reshape long YR, i(CountryName SeriesName) j(year)
 rename YR Score
@@ -5307,16 +5512,11 @@ rename (Score1-Score18 CountryName) (agriculturalland arableland precipitationav
  cerealprod cerealyield elecpowerconsumption elecprodcoal elecprodhydro elecprodnatgas ///
  elecprodnuclear elecprodoilgascoal forestland landbelow5m elecprodrenewable ///
  ruralandbelow5m GHGemissionpctchange GHGemissiontotal urbanlandbelow5m Country)
- 
-replace Country="Cape Verde" if Country=="Cabo Verde"
-replace Country="Swaziland" if Country=="Eswatini"
-replace Country="Nauru, Republic of" if Country=="Nauru"
-replace Country="Macedonia, FYR" if Country=="North Macedonia"
 
 save "WDI Climate Change.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "WDI Climate Change.dta"
+merge m:1 Country_Code year using "WDI Climate Change.dta"
 drop if _merge==2
 drop _merge
 
@@ -5341,10 +5541,6 @@ foreach v of varlist _all{
 
 replace Country="Antigua and Barbuda" if Country=="Antigua & Barbuda"
 replace Country="Bosnia and Herzegovina" if Country=="Bosnia & Herzegovina"
-replace Country="Cape Verde" if Country=="Cabo Verde"
-replace Country="Swaziland" if Country=="Eswatini"
-replace Country="Nauru, Republic of" if Country=="Nauru"
-replace Country="Macedonia, FYR" if Country=="North Macedonia"
 replace Country="Central African Republic" if Country=="Central African Rep."
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia, Fed. States"
 replace Country="Sao Tome and Principe" if Country=="Sao Tome & Principe"
@@ -5352,11 +5548,23 @@ replace Country="St. Kitts and Nevis" if Country=="St. Kitts & Nevis"
 replace Country="St. Vincent and the Grenadines" if Country=="St. Vincent & the Grenadines"
 replace Country="Trinidad and Tobago" if Country=="Trinidad & Tobago"
 replace Country="West Bank and Gaza" if Country=="West Bank & Gaza"
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Egypt" if Country=="Egypt, Arab Rep."
+replace Country="Iran" if Country=="Iran, Islamic Rep."
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Syria" if Country=="Syrian Arab Republic"
+replace Country="Yemen" if Country=="Yemen, Rep."
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "Fiscal Space Data.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "Fiscal Space Data.dta"
+merge m:1 Country_Code year using "Fiscal Space Data.dta"
 drop if _merge==2
 drop _merge
 
@@ -5394,16 +5602,23 @@ label var ValueAddedICTPctBusSecVA "[UNCTAD ICT] Valued added in the ICT sector 
 
 drop if PrWorkforceinICT==. & ValueAddedICTPctBusSecVA==.
 
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
 replace Country="Korea, Rep." if Country=="Korea, Republic of"
 replace Country="West Bank and Gaza" if Country=="State of Palestine"
-replace Country="Macedonia, FYR" if Country=="TFYR of Macedonia"
+replace Country="North Macedonia" if Country=="TFYR of Macedonia"
 replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="Hong Kong SAR, China" if Country=="China, Hong Kong SAR"
+replace Country="Russia" if Country=="Russian Federation"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
 
 save "UNCTAD ICT.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "UNCTAD ICT.dta"
+merge m:1 Country_Code year using "UNCTAD ICT.dta"
 drop if _merge==2
 drop _merge
 
@@ -5493,34 +5708,35 @@ drop if Country=="Sudan (...2011)" & year<2011
 drop if Country=="Serbia" & year<=2006
 drop if Country=="Serbia and Montenegro" & year>2006
 
+replace Country="Bahams, The" if Country=="Bahamas"
 replace Country="Bolivia" if Country=="Bolivia (Plurinational State of)"
-replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Hong Kong SAR, China" if Country=="China, Hong Kong SAR"
+replace Country="Macao SAR, China" if Country=="China, Macao SAR"
 replace Country="Czech Republic" if Country=="Czechia"
 replace Country="Slovak Republic" if Country=="Slovakia"
 replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
 replace Country="Congo, Dem. Rep." if Country=="Dem. Rep. of the Congo"
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
-replace Country="Swaziland" if Country=="Eswatini"
 replace Country="Gambia, The" if Country=="Gambia"
-replace Country="Iran, Islamic Rep." if Country=="Iran (Islamic Republic of)"
+replace Country="Iran" if Country=="Iran (Islamic Republic of)"
 replace Country="Indonesia" if Country=="Indonesia (...2002)"
 replace Country="Korea, Rep." if Country=="Korea, Republic of"
 replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
 replace Country="Lao PDR" if Country=="Lao People's Dem. Rep."
-replace Country="Macedonia, FYR" if Country=="TFYR of Macedonia"
+replace Country="North Macedonia" if Country=="TFYR of Macedonia"
 replace Country="Moldova" if Country=="Republic of Moldova"
+replace Country="Russia" if Country=="Russian Federation"
 replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
 replace Country="St. Lucia" if Country=="Saint Lucia"
 replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
 replace Country="West Bank and Gaza" if Country=="State of Palestine"
+replace Country="Syria" if Country=="Syrian Arab Republic"
 replace Country="Tanzania" if Country=="United Republic of Tanzania"
 replace Country="Venezuela, RB" if Country=="Venezuela (Bolivarian Rep. of)"
 replace Country="Vietnam" if Country=="Viet Nam"
-replace Country="Yemen, Rep." if Country=="Yemen"
 replace Country="Switzerland" if Country=="Switzerland, Liechtenstein"
 replace Country="Sudan" if Country=="Sudan (...2011)"
 replace Country="United States" if Country=="United States of America"
-replace Country="Nauru, Republic of" if Country=="Nauru"
 replace Country="Congo, Rep." if Country=="Congo"
 replace Country="Serbia" if Country=="Serbia and Montenegro"
 
@@ -5531,10 +5747,14 @@ foreach v of varlist _all{
 	label var `v' "`x'"
 }
 
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+
 save "UNCTAD Tariff data.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "UNCTAD Tariff data.dta"
+merge m:1 Country_Code year using "UNCTAD Tariff data.dta"
 drop if _merge==2
 drop _merge
 
@@ -5601,35 +5821,40 @@ rename country Country
 drop if year<1990
 
 replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Brunei" if Country=="Brunei Darussalam"
 replace Country="Bolivia" if Country=="Bolivia (Plurinational State of)"
-replace Country="Cape Verde" if Country=="Cabo Verde"
 replace Country="Congo, Rep." if Country=="Congo"
 replace Country="Congo, Dem. Rep." if Country=="Democratic Republic of the Congo"
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
 replace Country="Gambia, The" if Country=="Gambia"
-replace Country="Iran, Islamic Rep." if Country=="Iran (Islamic Republic of)"
+replace Country="Iran" if Country=="Iran (Islamic Republic of)"
 replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
 replace Country="Lao PDR" if Country=="Lao People's Democratic Republic"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia (Federated States of)"
-replace Country="Nauru, Republic of" if Country=="Nauru"
 replace Country="Korea, Rep." if Country=="Republic of Korea"
+replace Country="Korea, Dem. People’s Rep." if Country=="Democratic People's Republic of Korea"
 replace Country="Moldova" if Country=="Republic of Moldova"
+replace Country="Russia" if Country=="Russian Federation"
 replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
 replace Country="St. Lucia" if Country=="Saint Lucia"
 replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
 replace Country="Slovak Republic" if Country=="Slovakia"
-replace Country="Macedonia, FYR" if Country=="The former Yugoslav Republic of Macedonia"
+replace Country="Eswatini" if Country=="Swaziland"
+replace Country="Syria" if Country=="Syrian Arab Republic"
+replace Country="North Macedonia" if Country=="The former Yugoslav Republic of Macedonia"
 replace Country="United Kingdom" if Country=="United Kingdom of Great Britain and Northern Ireland"
 replace Country="Tanzania" if Country=="United Republic of Tanzania"
 replace Country="United States" if Country=="United States of America"
 replace Country="Venezuela, RB" if Country=="Venezuela (Bolivarian Republic of)"
 replace Country="Vietnam" if Country=="Viet Nam"
-replace Country="Yemen, Rep." if Country=="Yemen"
+
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
 
 save "GGKP Dataset.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "GGKP Dataset.dta"
+merge m:1 Country_Code year using "GGKP Dataset.dta"
 drop if _merge==2
 drop _merge
 
@@ -5678,32 +5903,31 @@ lab var naturalgasposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy of Natural
 lab var electricityposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy of Electricity (% of GDP)"
 lab var totalposttaxsubsidy "[IMF Fuel Subsidy] Post-Tax Subsidy Total (% of GDP)"
 
-replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Brunei" if Country=="Brunei Darussalam"
 replace Country="Congo, Dem. Rep." if Country=="Congo, Democratic Republic of the"
 replace Country="Congo, Rep." if Country=="Congo, Republic of"
 replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
-replace Country="Macedonia, FYR" if Country=="FYR Macedonia"
+replace Country="North Macedonia" if Country=="FYR Macedonia"
 replace Country="Hong Kong SAR, China" if Country=="Hong Kong SAR"
-replace Country="Iran, Islamic Rep." if Country=="Iran"
 replace Country="Korea, Rep." if Country=="Korea"
 replace Country="Lao PDR" if Country=="Lao P.D.R."
 replace Country="Macao SAR, China" if Country=="Macao SAR"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia"
 replace Country="Montenegro" if Country=="Montenegro, Rep. of"
-replace Country="Nauru, Republic of" if Country=="Nauru"
-replace Country="Russian Federation" if Country=="Russia"
-replace Country="Syrian Arab Republic" if Country=="Syria"
 replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
+replace Country="Eswatini" if Country=="Swaziland"
 replace Country="Timor-Leste" if Country=="Timor-Leste, Dem. Rep. of"
 replace Country="Venezuela, RB" if Country=="Venezuela"
-replace Country="Yemen, Rep." if Country=="Yemen"
+
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
 
 save "IMF fuel tax gap data.dta", replace
 
 use "Master Dataset.dta", clear
 
-merge m:1 Country year using "IMF fuel tax gap data"
+merge m:1 Country_Code year using "IMF fuel tax gap data"
 drop if _merge==2
 drop _merge
 
@@ -5729,31 +5953,32 @@ rename CPI TI_CPI
 lab var TI_CPI "[TI] Corruption Perceptions Index"
 
 replace Country="Bahamas, The" if Country=="Bahamas"
-replace Country="Cape Verde" if Country=="Cabo Verde"
+replace Country="Brunei" if Country=="Brunei Darussalam"
 replace Country="Congo, Dem. Rep." if Country=="Democratic Republic of the Congo"
 replace Country="Congo, Rep." if Country=="Congo"
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
 replace Country="Gambia, The" if Country=="Gambia"
 replace Country="Guinea-Bissau" if Country=="Guinea Bissau"
 replace Country="Hong Kong SAR, China" if Country=="Hong Kong"
-replace Country="Iran, Islamic Rep." if Country=="Iran"
 replace Country="Korea, Rep." if Country=="Korea, South"
+replace Country="Korea, Dem. People’s Rep." if Country=="Korea, North"
 replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
 replace Country="Lao PDR" if Country=="Laos"
-replace Country="Macedonia, FYR" if Country=="Macedonia"
-replace Country="Russian Federation" if Country=="Russia"
+replace Country="North Macedonia" if Country=="Macedonia"
 replace Country="St. Lucia" if Country=="Saint Lucia"
 replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
 replace Country="Slovak Republic" if Country=="Slovakia"
-replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="Eswatini" if Country=="Swaziland"
 replace Country="United States" if Country=="United States of America"
 replace Country="Venezuela, RB" if Country=="Venezuela"
-replace Country="Yemen, Rep." if Country=="Yemen"
+
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
 
 save "TI Corruption data.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "TI Corruption data.dta"
+merge m:1 Country_Code year using "TI Corruption data.dta"
 drop if _merge==2
 drop _merge
 
@@ -5798,30 +6023,30 @@ lab var plastic_waste_litter "[OWiD 2010] Plastic waste littered (tons per year)
 lab var plastic_waste_generated "[OWiD 2010] Plastic waste generation (tons per year, total)"
 
 replace Country="Bahamas, The" if Country=="Bahamas"
-replace Country="Brunei Darussalam" if Country=="Brunei"
+replace Country="Cabo Verde" if Country=="Cape Verde"
 replace Country="Congo, Rep." if Country=="Congo"
 replace Country="Congo, Dem. Rep." if Country=="Democratic Republic of Congo"
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
 replace Country="Gambia, The" if Country=="Gambia"
 replace Country="Hong Kong SAR, China" if Country=="Hong Kong"
-replace Country="Iran, Islamic Rep." if Country=="Iran"
 replace Country="Macao SAR, China" if Country=="Macao"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia (country)"
-replace Country="Nauru, Republic of" if Country=="Nauru"
+replace Country="Korea, Dem. People’s Rep." if Country=="North Korea"
 replace Country="West Bank and Gaza" if Country=="Palestine"
-replace Country="Russian Federation" if Country=="Russia"
 replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
 replace Country="St. Lucia" if Country=="Saint Lucia"
 replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
 replace Country="Korea, Rep." if Country=="South Korea"
-replace Country="Syrian Arab Republic" if Country=="Syria"
 replace Country="Venezuela, RB" if Country=="Venezuela"
-replace Country="Yemen, Rep." if Country=="Yemen"
+
+merge m:1 Country using "Country Codes.dta"
+replace Country_Code="PRK" if Country=="Korea, Dem. People's Rep."
+drop if _merge!=3
+drop _merge 
 
 save "OWiD 2010 data.dta", replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using "OWiD 2010 data.dta"
+merge m:1 Country_Code year using "OWiD 2010 data.dta"
 drop if _merge==2
 drop _merge
 
@@ -5869,22 +6094,24 @@ replace Country="Bahamas, The" if Country=="Bahamas"
 replace Country="Gambia, The" if Country=="Gambia"
 replace Country="Hong Kong SAR, China" if Country=="Hong Kong"
 replace Country="Macao SAR, China" if Country=="Macao"
-replace Country="Macedonia, FYR" if Country=="Macedonia"
-replace Country="Nauru, Republic of" if Country=="Nauru"
-replace Country="Russian Federation" if Country=="Russia"
+replace Country="North Macedonia" if Country=="Macedonia"
 replace Country="Slovak Republic" if Country=="Slovakia"
 replace Country="Korea, Rep." if Country=="South Korea"
 replace Country="United States" if Country=="USA"
-replace Country="Benezuela, RB" if Country=="Venezuela"
+replace Country="Venezuela, RB" if Country=="Venezuela"
 replace Country="United Arab Emirates" if Country=="United Arab Emirates (Dubai)"
 replace Country="Portugal" if Country=="Portugal (Madeira)"
 replace Country="Malaysia" if Country=="Malaysia (Labuan)"
+
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
 
 tempfile secrecy
 save `secrecy'
 
 use "Master Dataset.dta", clear
-merge m:1 Country using `secrecy'
+merge m:1 Country_Code using `secrecy'
 drop if _merge==2
 drop _merge
 
@@ -6023,34 +6250,31 @@ append using `i19'
 sort Country year
 
 replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Cabo Verde" if Country=="Cape Verde"
 replace Country="Myanmar" if Country=="Burma"
-replace Country="Cape Verde" if Country=="Cabo Verde"
 replace Country="Congo, Dem. Rep." if Country=="Congo, Democratic Republic of" | ///
  Country=="Congo, Democratic Republic of the Congo"
 replace Country="Congo, Rep." if Country=="Congo, Republic of"
 replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
-replace Country="Egypt, Arab Rep." if Country=="Egypt"
-replace Country="Swaziland" if Country=="Eswatini"
+replace Country="Eswatini" if Country=="Swaziland"
 replace Country="Gambia, The" if Country=="Gambia"
 replace Country="Hong Kong SAR, China" if Country=="Hong Kong" | Country=="Hong Kong SAR"
-replace Country="Iran, Islamic Rep." if Country=="Iran"
-replace Country="Korea, DPR" if Country=="Korea, North" | Country=="Korea, North "
+replace Country="Korea, Dem. People’s Rep." if Country=="Korea, North" | Country=="Korea, North "
 replace Country="Korea, Rep." if Country=="Korea, South"
 replace Country="Lao PDR" if Country=="Lao P.D.R." | Country=="Laos"
 replace Country="Macao SAR, China" if Country=="Macau"
-replace Country="Macedonia, FYR" if Country=="Macedonia"
+replace Country="North Macedonia" if Country=="Macedonia"
 replace Country="Micronesia, Fed. Sts." if Country=="Micronesia"
-replace Country="Russian Federation" if Country=="Russia"
 replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
 replace Country="St. Lucia" if Country=="Saint Lucia" | Country=="Saint. Lucia"
 replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines" ///
  | Country=="Saint Vincent and The Grenadines" | Country=="Saint. Vincent and the Grenadines"
 replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
 replace Country="Slovak Republic" if Country=="Slovakia"
-replace Country="Syrian Arab Republic" if Country=="Syria"
 replace Country="Taiwan" if Country=="Taiwan "
 replace Country="Venezuela, RB" if Country=="Venezuela"
-replace Country="Yemen, Rep." if Country=="Yemen"
+
 
 foreach v of varlist Property-TaxBurden {
 	local u: variable label `v'
@@ -6058,21 +6282,25 @@ foreach v of varlist Property-TaxBurden {
 	label var `v' "`x'"
 }
 
+merge m:1 Country using "Country Codes.dta"
+replace Country_Code="PRK" if Country=="Korea, Dem. People's Rep."
+drop if year==.
+drop _merge
+
 tempfile heritage
 save `heritage', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country year using `heritage'
+merge m:1 Country_Code year using `heritage'
 drop if _merge==2
 drop _merge
-
 
 save "Master Dataset.dta", replace
 
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
-
+/*
 drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
  Total_Revenue_incl_SC_99 Total_Revenue_incl_SC_01 Income_Taxes_99 ///
  Income_Taxes_01 Value_Added_Tax_99 Value_Added_Tax_01 Excise_Taxes_99 ///
@@ -6089,4 +6317,3 @@ drop countryname country_number Region_Code CountryName res_dum oil_gas_dum ///
  Popexposuretoairpollution code
  
 save "Master Dataset.dta", replace
-
