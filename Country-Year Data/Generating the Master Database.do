@@ -36,6 +36,7 @@ IMF Energy Subsidies
 TI Corruption Perceptions index
 Financial Secrecy Index
 Heritage Foundation freedoms
+IDA18 Cycle classifications
 Trimming extra Variables
 */
 
@@ -5399,7 +5400,7 @@ save "Master Dataset.dta", replace
 /******WB Income Levels******/
 /****************************/
 
-import excel "OGHIST.xls", sheet("Country Analytical History") cellrange(A6:AF229) clear
+import excel "OGHIST.xls", sheet("Country Analytical History") cellrange(A6:AG229) clear
 drop B C D E
 
 foreach var of varlist _all {
@@ -6048,12 +6049,37 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+/*********************************/
+/***IDA18 Cycle classifications***/
+/*********************************/
+
+import excel "MPO_SM19_TotalTax_GDP.xlsx", sheet("List of economies") firstrow cellrange(D5:I224) clear
+drop if Code=="x"
+drop Economy
+rename Code Country_Code
+replace Lending="" if Lending==".."
+gen IDA = (Lending=="IDA" | Lending=="Blend")
+gen IBRD = (Lending=="IBRD")
+
+drop Region X Incomegroup
+
+tempfile IDAlist
+save `IDAlist'
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code using `IDAlist'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
 
 drop country resourcerevenuenotes socialcontributionsnotes inc generalnotes cautionnotes ///
 	CountryName
+sort Country year
 
 compress
 
