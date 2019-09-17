@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2017
-//Last update: September 5 2019.
+//Last update: September 17 2019.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -37,6 +37,7 @@ TI Corruption Perceptions index
 Financial Secrecy Index
 Heritage Foundation freedoms
 IDA18 Cycle classifications
+UN e-Governance Index
 Trimming extra Variables
 */
 
@@ -6068,6 +6069,241 @@ save `IDAlist'
 
 use "Master Dataset.dta", clear
 merge m:1 Country_Code using `IDAlist'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/***************************/
+/***UN e-Governance Index***/
+/***************************/
+
+clear all
+
+foreach egovyr in 18 16 14 12 10 08 05 04 03 {
+
+import delimited "EGOV_DATA_20`egovyr'.csv", clear
+
+rename surveyyear year
+rename countryname Country
+
+replace Country="Albania" if Country=="Albania "
+replace Country="Algeria" if Country=="Algeria "
+replace Country="Andorra" if Country=="Andorra "
+replace Country="Angola" if Country=="Angola "
+replace Country="Antigua and Barbuda" if Country=="Antigua and Barbuda "
+replace Country="Argentina" if Country=="Argentina "
+replace Country="Armenia" if Country=="Armenia "
+replace Country="Australia" if Country=="Australia "
+replace Country="Azerbaijan" if Country=="Azerbaijan "
+replace Country="Bahamas, The" if Country=="Bahamas "
+replace Country="Bahrain" if Country=="Bahrain "
+replace Country="Bangladesh" if Country=="Bangladesh "
+replace Country="Barbados" if Country=="Barbados "
+replace Country="Belarus" if Country=="Belarus "
+replace Country="Belgium" if Country=="Belgium "
+replace Country="Belize" if Country=="Belize "
+replace Country="Benin" if Country=="Benin "
+replace Country="Bhutan" if Country=="Bhutan "
+replace Country="Bolivia" if Country=="Bolivia "
+replace Country="Bosnia and Herzegovina" if Country=="Bosnia and Herzegovina "
+replace Country="Botswana" if Country=="Botswana "
+replace Country="Brazil" if Country=="Brazil "
+replace Country="Brunei" if Country=="Brunei Darussalam "
+replace Country="Bulgaria" if Country=="Bulgaria "
+replace Country="Burkina Faso" if Country=="Burkina Faso "
+replace Country="Burundi" if Country=="Burundi "
+replace Country="Cabo Verde" if Country=="Cabo Verde "
+replace Country="Cambodia" if Country=="Cambodia "
+replace Country="Cameroon" if Country=="Cameroon "
+replace Country="Canada" if Country=="Canada "
+replace Country="Central African Republic" if Country=="Central African Republic "
+replace Country="Chad" if Country=="Chad "
+replace Country="Chile" if Country=="Chile "
+replace Country="China" if Country=="China "
+replace Country="Colombia" if Country=="Colombia "
+replace Country="Comoros" if Country=="Comoros "
+replace Country="Congo, Rep." if Country=="Congo "
+replace Country="Costa Rica" if Country=="Costa Rica "
+replace Country="Croatia" if Country=="Croatia "
+replace Country="Cuba" if Country=="Cuba "
+replace Country="Cyprus" if Country=="Cyprus "
+replace Country="Czech Republic" if Country=="Czech Republic "
+replace Country="Korea, Dem. People’s Rep." if Country=="Democratic People's Republic of Korea "
+replace Country="Cote d'Ivoire" if Country=="CÃ´te d'Ivoire "
+replace Country="Congo, Dem. Rep." if Country=="Democratic Republic of the Congo "
+replace Country="Denmark" if Country=="Denmark "
+replace Country="Djibouti" if Country=="Djibouti "
+replace Country="Dominica" if Country=="Dominica "
+replace Country="Dominican Republic" if Country=="Dominican Republic "
+replace Country="Ecuador" if Country=="Ecuador "
+replace Country="Egypt" if Country=="Egypt "
+replace Country="El Salvador" if Country=="El Salvador "
+replace Country="Equatorial Guinea" if Country=="Equatorial Guinea "
+replace Country="Eritrea" if Country=="Eritrea "
+replace Country="Estonia" if Country=="Estonia "
+replace Country="Ethiopia" if Country=="Ethiopia "
+replace Country="Fiji" if Country=="Fiji "
+replace Country="Finland" if Country=="Finland "
+replace Country="Gabon" if Country=="Gabon "
+replace Country="Gambia, The" if Country=="Gambia "
+replace Country="Georgia" if Country=="Georgia (Country)"
+replace Country="Germany" if Country=="Germany "
+replace Country="Ghana" if Country=="Ghana "
+replace Country="Greece" if Country=="Greece "
+replace Country="Grenada" if Country=="Grenada "
+replace Country="Guatemala" if Country=="Guatemala "
+replace Country="Guinea" if Country=="Guinea "
+replace Country="Guinea-Bissau" if Country=="Guinea-Bissau "
+replace Country="Guyana" if Country=="Guyana "
+replace Country="Haiti" if Country=="Haiti "
+replace Country="Honduras" if Country=="Honduras "
+replace Country="Hungary" if Country=="Hungary "
+replace Country="Iceland" if Country=="Iceland "
+replace Country="India" if Country=="India "
+replace Country="Indonesia" if Country=="Indonesia "
+replace Country="Iran" if Country=="Iran (Islamic Republic of) "
+replace Country="Iraq" if Country=="Iraq "
+replace Country="Ireland" if Country=="Ireland "
+replace Country="Israel" if Country=="Israel "
+replace Country="Italy" if Country=="Italy "
+replace Country="Jamaica" if Country=="Jamaica "
+replace Country="Japan" if Country=="Japan "
+replace Country="Jordan" if Country=="Jordan "
+replace Country="Kazakhstan" if Country=="Kazakhstan "
+replace Country="Kenya" if Country=="Kenya "
+replace Country="Kiribati" if Country=="Kiribati "
+replace Country="Kuwait" if Country=="Kuwait "
+replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan "
+replace Country="Lao PDR" if Country=="Lao People's Democratic Republic "
+replace Country="Latvia" if Country=="Latvia "
+replace Country="Lebanon" if Country=="Lebanon "
+replace Country="Lesotho" if Country=="Lesotho "
+replace Country="Liberia" if Country=="Liberia "
+replace Country="Libya" if Country=="Libya "
+replace Country="Lithuania" if Country=="Lithuania "
+replace Country="Luxembourg" if Country=="Luxmebourg "
+replace Country="Madagascar" if Country=="Madagascar "
+replace Country="Malawi" if Country=="Malawi "
+replace Country="Mali" if Country=="Mali "
+replace Country="Malta" if Country=="Malta "
+replace Country="Marshall Islands" if Country=="Marshall Islands "
+replace Country="Mauritania" if Country=="Mauritania "
+replace Country="Mauritius" if Country=="Mauritius "
+replace Country="Mexico" if Country=="Mexico "
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia (Federated States of) "
+replace Country="Monaco" if Country=="Monaco "
+replace Country="Mongolia" if Country=="Mongolia "
+replace Country="Morocco" if Country=="Morocco "
+replace Country="Mozambique" if Country=="Mozambique "
+replace Country="Myanmar" if Country=="Myanmar "
+replace Country="Namibia" if Country=="Namibia "
+replace Country="Nauru" if Country=="Nauru "
+replace Country="Nepal" if Country=="Nepal "
+replace Country="Netherlands" if Country=="Netherlands "
+replace Country="New Zealand" if Country=="New Zealand "
+replace Country="Nicaragua" if Country=="Nicaragua "
+replace Country="Niger" if Country=="Niger "
+replace Country="Nigeria" if Country=="Nigeria "
+replace Country="Norway" if Country=="Norway "
+replace Country="Oman" if Country=="Oman "
+replace Country="Pakistan" if Country=="Pakistan "
+replace Country="Palau" if Country=="Palau "
+replace Country="Panama" if Country=="Panama "
+replace Country="Papua New Guinea" if Country=="Papua New Guinea "
+replace Country="Paraguay" if Country=="Paraguay "
+replace Country="Peru" if Country=="Peru "
+replace Country="Philippines" if Country=="Philippines "
+replace Country="Poland" if Country=="Poland "
+replace Country="Portugal" if Country=="Portugal "
+replace Country="Qatar" if Country=="Qatar "
+replace Country="Korea, Rep." if Country=="Republic of Korea "
+replace Country="Moldova" if Country=="Republic of Moldova "
+replace Country="Romania" if Country=="Romania "
+replace Country="Russia" if Country=="Russian Federation "
+replace Country="Rwanda" if Country=="Rwanda "
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis "
+replace Country="St. Lucia" if Country=="Saint Lucia "
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines "
+replace Country="Samoa" if Country=="Samoa "
+replace Country="San Marino" if Country=="San Marino "
+replace Country="Sao Tome and Principe" if Country=="Sao Tome and Principe "
+replace Country="Saudi Arabia" if Country=="Saudi Arabia "
+replace Country="Senegal" if Country=="Senegal "
+replace Country="Seychelles" if Country=="Seychelles "
+replace Country="Sierra Leone" if Country=="Sierra Leone "
+replace Country="Singapore" if Country=="Singapore "
+replace Country="Slovak Republic" if Country=="Slovakia "
+replace Country="Slovenia" if Country=="Slovenia "
+replace Country="Solomon Islands" if Country=="Solomon Islands "
+replace Country="Somalia" if Country=="Somalia "
+replace Country="South Africa" if Country=="South Africa "
+replace Country="Spain" if Country=="Spain "
+replace Country="Sri Lanka" if Country=="Sri Lanka "
+replace Country="Sudan" if Country=="Sudan "
+replace Country="Suriname" if Country=="Suriname "
+replace Country="Sweden" if Country=="Sweden "
+replace Country="Switzerland" if Country=="Switzerland "
+replace Country="Syria" if Country=="Syrian Arab Republic "
+replace Country="Tajikistan" if Country=="Tajikistan "
+replace Country="Thailand" if Country=="Thailand "
+replace Country="North Macedonia" if Country=="The former Yugoslav Republic of Macedonia "
+replace Country="Togo" if Country=="Togo "
+replace Country="Tonga" if Country=="Tonga "
+replace Country="Trinidad and Tobago" if Country=="Trinidad and Tobago "
+replace Country="Tunisia" if Country=="Tunisia "
+replace Country="Turkey" if Country=="Turkey "
+replace Country="Turkmenistan" if Country=="Turkmenistan "
+replace Country="Tuvalu" if Country=="Tuvalu "
+replace Country="Uganda" if Country=="Uganda "
+replace Country="United Arab Emirates" if Country=="United Arab Emirates "
+replace Country="United Kingdom" if Country=="United Kingdom of Great Britain and Northern Ireland"
+replace Country="Tanzania" if Country=="United Republic of Tanzania "
+replace Country="United States" if Country=="United States of America "
+replace Country="Uruguay" if Country=="Uruguay "
+replace Country="Uzbekistan" if Country=="Uzbekistan "
+replace Country="Vanuatu" if Country=="Vanuatu "
+replace Country="Venezuela, RB" if Country=="Venezuela "
+replace Country="Vietnam" if Country=="Viet Nam "
+replace Country="Yemen" if Country=="Yemen "
+replace Country="Zambia" if Country=="Zambia "
+replace Country="Zimbabwe" if Country=="Zimbabwe "
+
+merge 1:1 Country using "Country Codes.dta"
+
+drop if _merge==2
+drop _merge
+
+tempfile  egov`egovyr'
+save	 `egov`egovyr'', replace
+
+}
+
+use `egov03', clear
+foreach egovyr in 18 16 14 12 10 08 05 04 {
+
+	append using `egov`egovyr''
+
+}
+
+rename (egovernmentrank egovernmentindex humancapitalindex ///
+ telecommunicationinfrastructurei) (egovrank egovindex humcapindex telecommindex)
+
+foreach v of varlist egovrank-telecommindex {
+	local u: variable label `v'
+	local x = "[UN e-Governance] " + "`u'"
+	label var `v' "`x'"
+}
+
+format Country %32s
+format egovrank-telecommindex %5.0g
+sort Country year
+
+tempfile UNegov
+save	`UNegov'
+
+use "Master Dataset.dta", clear
+merge 1:1 Country_Code year using `UNegov'
 drop if _merge==2
 drop _merge
 
