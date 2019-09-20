@@ -21,7 +21,6 @@ GSMA (SSA only)
 Harmonized List of FCV
 WGI
 IMF Public Debt
-Aspire (SSA)
 Latinobarometro
 MIMIC informality
 Worldwide Bureaucracy Indicators
@@ -38,6 +37,8 @@ Financial Secrecy Index
 Heritage Foundation freedoms
 IDA18 Cycle classifications
 UN e-Governance Index
+WDI - Human Capital Expenditure
+ASPIRE Beneficiary Incidence and Coverage
 Trimming extra Variables
 */
 
@@ -3346,80 +3347,6 @@ label var publicdebtimf "[IMF] Public Debt (% of GDP)"
 
 save "Master Dataset.dta", replace
 
-/************************/
-/******Aspire (SSA)******/
-/************************/
-
-import excel "SSA social safety nets benefit incidence, poorest quintile.xlsx", ///
- sheet("Data") firstrow case(lower) clear
- 
-drop seriescode
-drop countrycode
-
-foreach u of varlist yr1998-yr2018 {
-
-	replace `u'="" if `u'==".."
-
-}
-
-rename countryname Country
-destring yr1998-yr2018, replace
-
-reshape long yr, i(Country) j(year)
-
-rename yr ssn_ben_inc
-drop seriesname
-
-save "SSA social safety nets benefit incidence, poorest quintile.dta", replace
-
-clear all
-
-import excel "SSA social safety nets coverage, poorest quintile.xlsx", ///
- sheet("Data") firstrow case(lower)
-
-drop seriescode
-drop countrycode
-
-foreach u of varlist yr1998-yr2018 {
-
-	replace `u'="" if `u'==".."
-
-}
-
-rename countryname Country
-destring yr1998-yr2018, replace
-
-reshape long yr, i(Country) j(year)
-
-rename yr ssn_cov
-drop seriesname
-
-save "SSA social safety nets coverage, poorest quintile.dta", replace
-
-merge m:1 Country year using "SSA social safety nets benefit incidence, poorest quintile.dta"
-drop _merge
-
-***Prepping to be merged into Master Dataset*
-drop if year>2017
-
-//adding country codes for safe merging
-merge m:1 Country using "Country Codes.dta"
-drop if _merge!=3
-drop _merge
-drop Country
-
-save "SSA social safety nets coverage and benefit incidence, poorest quintile.dta", replace
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "SSA social safety nets coverage and benefit incidence, poorest quintile.dta"
-drop if _merge==2
-drop _merge
-
-label var ssn_ben_inc "[ASPIRE] Social Safety Nets Beneficiary Incidence (poorest quintile)"
-label var ssn_cov "[ASPIRE] Social Safety Nets Coverage (poorest quintile)"
-
-save "Master Dataset.dta", replace
-
 /*****************/
 /*LATINOBAROMETRO*/
 /*****************/
@@ -6304,6 +6231,108 @@ save	`UNegov'
 
 use "Master Dataset.dta", clear
 merge 1:1 Country_Code year using `UNegov'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/*************************************/
+/***WDI - Human Capital Expenditure***/
+/*************************************/
+
+import excel "WDIs Health and Education expenditures 2000-2018.xlsx", sheet("Data") ///
+ firstrow clear
+
+rename (CountryName CountryCode Time) (Country Country_Code year)
+drop TimeCode
+drop if year==.
+
+foreach v in Currenthealthexpenditureof Expenditureonprimaryeducation ///
+ Expenditureonsecondaryeducati Expenditureontertiaryeducatio /// 
+ Governmentexpenditureoneducat J {
+
+	replace `v'="" if `v'==".."
+	destring `v', replace
+
+}
+
+rename (Currenthealthexpenditureof Expenditureonprimaryeducation ///
+ Expenditureonsecondaryeducati Expenditureontertiaryeducatio ///
+ Governmentexpenditureoneducat J) (HealthExp_GDP Pri_Edu_GovExp Sec_Edu_GovExp ///
+ Tri_Edu_GovExp Edu_Exp_Gov_GDP Edu_Exp_Gov_GovExp)
+ 
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[WDI] " + "`u'"
+	label var `v' "`x'"
+}
+
+tempfile WDIhumancap
+save	`WDIhumancap'
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using `WDIhumancap'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/***********************************************/
+/***ASPIRE Benficiary Inicidence and Coverage***/
+/***********************************************/
+
+import excel "ASPIRE beneficiary incidence and coverage 1999-2016.xlsx", sheet("Data") ///
+ firstrow clear
+ 
+ rename (CountryName CountryCode Time) (Country Country_Code year)
+drop TimeCode I
+drop if year==.
+
+foreach v in Beneficiaryincidencein1stqui F G H J K L ///
+ Beneficiaryincidencein2ndqui N O P Beneficiaryincidencein3rdqui R S ///
+ Beneficiaryincidencein4thqui U V Beneficiaryincidencein5thqui X Y Z AA AB ///
+ CoverageAllSocialAssist AD AE CoverageAllSocialProtect AG AH ///
+ Coveragein1stquintilepoores AJ AK AL Coveragein2ndquintileA ///
+ Coveragein2ndquintileAl AO AP Coveragein3rdquintileA Coveragein3rdquintileAl ///
+ AS AT Coveragein4thquintileA Coveragein4thquintileAl AW AX ///
+ Coveragein5thquintileriches AZ BA BB {
+
+	replace `v'="" if `v'==".."
+	destring `v', replace
+
+}
+
+rename (Beneficiaryincidencein1stqui F G H J K L Beneficiaryincidencein2ndqui ///
+ N O P Beneficiaryincidencein3rdqui R S Beneficiaryincidencein4thqui U V ///
+ Beneficiaryincidencein5thqui X Y Z AA AB CoverageAllSocialAssist AD AE ///
+ CoverageAllSocialProtect AG AH Coveragein1stquintilepoores AJ AK AL ///
+ Coveragein2ndquintileA Coveragein2ndquintileAl AO AP Coveragein3rdquintileA ///
+ Coveragein3rdquintileAl AS AT Coveragein4thquintileA Coveragein4thquintileAl AW ///
+ AX Coveragein5thquintileriches AZ BA BB) (AllSA_BenInc_1st AllSI_BenInc_1st ///
+ AllSA_Urb_BenInc_1st AllSA_Rur_BenInc_1st SPL_BenInc_1st SPL_Rur_BenInc_1st ///
+ SPL_Urb_BenInc_1st AllSA_BenInc_2nd SPL_Urb_BenInc_2nd SPL_Rur_BenInc_2nd ///
+ SPL_BenInc_2nd SPL_BenInc_3rd SPL_Rur_BenInc_3rd SPL_Urb_BenInc_3rd SPL_BenInc_4th ///
+ SPL_Rur_BenInc_4th SPL_Urb_BenInc_4th AllSA_BenInc_5th AllSA_BenInc_4th ///
+ AllSA_BenInc_3rd SPL_BenInc_5th SPL_Rur_BenInc_5th SPL_Urb_BenInc_5th Cov_AllSA ///
+ Cov_Rur_AllSA Cov_Urb_AllSA Cov_SPL Cov_Rur_SPL Cov_Urb_SPL Cov_AllSA_1st ///
+ Cov_SPL_1st Cov_Rur_SPL_1st Cov_Urb_SPL_1st Cov_AllSA_2nd Cov_SPL_2nd ///
+ Cov_Rur_SPL_2nd Cov_Urb_SPL_2nd Cov_AllSA_3rd Cov_SPL_3rd Cov_Rur_SPL_3rd ///
+ Cov_Urb_SPL_3rd Cov_AllSA_4th Cov_SPL_4th Cov_Rur_SPL_4th Cov_Urb_SPL_4th ///
+ Cov_AllSA_5th Cov_SPL_5th Cov_Rur_SPL_5th Cov_Urb_SPL_5th)
+ 
+format Country %36s
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[ASPIRE] " + "`u'"
+	label var `v' "`x'"
+}
+
+tempfile ASPIREBenIncandCov
+save	`ASPIREBenIncandCov', replace
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using `ASPIREBenIncandCov'
 drop if _merge==2
 drop _merge
 
