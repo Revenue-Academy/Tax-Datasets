@@ -40,6 +40,7 @@ UN e-Governance Index
 WDI - Human Capital Expenditure
 ASPIRE Beneficiary Incidence and Coverage
 GFS Social Benefits Expenditure
+OECD Tax Wedge
 Trimming extra Variables
 */
 
@@ -393,6 +394,58 @@ drop if _merge==2
 drop _merge
 
 save "Master Dataset.dta", replace
+
+//Population
+
+import excel "WDI population.xlsx", sheet("Data") firstrow clear
+
+drop if CountryCode==""
+drop TimeCode
+rename CountryName Country
+rename CountryCode Country_Code
+rename Time year
+rename Population Population
+replace Population="" if Population==".."
+destring Population, replace
+
+label var Population "[WDI] Population"
+
+tempfile pop
+save 	`pop', replace
+
+use "Master dataset.dta", clear
+
+merge 1:1 Country_Code year using `pop'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
+
+//Government Expense
+
+import excel "WDI govt expense.xlsx", sheet("Data") firstrow clear
+
+drop if CountryCode==""
+drop TimeCode
+rename CountryName Country
+rename CountryCode Country_Code
+rename Time year
+rename ExpenseofGDPGCXPNTOTL Gov_Exp_GDP
+replace Gov_Exp_GDP="" if Gov_Exp_GDP==".."
+destring Gov_Exp_GDP, replace
+
+label var Gov_Exp_GDP "[WDI] Expense (% of GDP)"
+
+tempfile expense
+save 	`expense', replace
+
+use "Master dataset.dta", clear
+
+merge 1:1 Country_Code year using `expense'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
 
 /*****************************/
 /*****Enterprise Surveys******/
@@ -6372,6 +6425,43 @@ drop if _merge==2
 drop _merge
 
 save "Master Dataset.dta", replace
+
+/********************/
+/***OECD Tax Wedge***/
+/********************/
+
+import excel "OECD tax wedge.xlsx", sheet("OECD.Stat export") clear
+
+keep A B K
+
+rename A Country
+rename B year
+rename K TaxWedge
+
+drop in 1/5
+drop if year==""
+
+destring TaxWedge, replace
+destring year, replace
+
+replace Country="Korea, Rep." if Country=="Korea"
+
+merge m:1 Country using "Country Codes.dta"
+drop if _merge==2
+drop _merge
+
+tempfile taxwedge
+save	`taxwedge', replace
+
+lab var TaxWedge "[OECD] Average Tax Wedge (% labour costs)"
+
+use "Master dataset.dta", clear
+
+merge 1:1 Country_Code year using `taxwedge'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
 
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
