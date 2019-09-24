@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2017
-//Last update: September 17 2019.
+//Last update: September 24 2019.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -6450,10 +6450,10 @@ merge m:1 Country using "Country Codes.dta"
 drop if _merge==2
 drop _merge
 
+lab var TaxWedge "[OECD] Average Tax Wedge (% labour costs)"
+
 tempfile taxwedge
 save	`taxwedge', replace
-
-lab var TaxWedge "[OECD] Average Tax Wedge (% labour costs)"
 
 use "Master dataset.dta", clear
 
