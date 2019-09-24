@@ -39,6 +39,7 @@ IDA18 Cycle classifications
 UN e-Governance Index
 WDI - Human Capital Expenditure
 ASPIRE Beneficiary Incidence and Coverage
+GFS Social Benefits Expenditure
 Trimming extra Variables
 */
 
@@ -6333,6 +6334,40 @@ save	`ASPIREBenIncandCov', replace
 
 use "Master Dataset.dta", clear
 merge m:1 Country_Code year using `ASPIREBenIncandCov'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/*************************************/
+/***GFS Social Benefits Expenditure***/
+/*************************************/
+
+use "GFS Social Benefits Expenditure.dta", clear
+
+replace Country="Afghanistan" if Country=="Afghanistan, Islamic Republic of"
+replace Country="Armenia" if Country=="Armenia, Republic of"
+replace Country="Azerbaijan" if Country=="Azerbaijan, Republic of"
+replace Country="Hong Kong SAR, China" if Country=="China, P.R.: Hong Kong"
+replace Country="Congo, Rep." if Country=="Congo, Republic of"
+replace Country="Iran" if Country=="Iran, Islamic Republic of"
+replace Country="Korea, Rep." if Country=="Korea, Republic of"
+replace Country="Kosovo" if Country=="Kosovo, Republic of"
+replace Country="North Macedonia" if Country=="North Macedonia, Republic of"
+replace Country="Russia" if Country=="Russian Federation"
+replace Country="Serbia" if Country=="Serbia, Republic of"
+replace Country="Timor-Leste" if Country=="Timor-Leste, Dem. Rep. of"
+replace Country="Yemen" if Country=="Yemen, Republic of"
+replace Country="Macao SAR, China" if Country=="China, P.R.: Macao"
+
+merge m:1 Country using "Country Codes.dta"
+drop _merge
+
+tempfile GFS_SB_Expenditure
+save `GFS_SB_Expenditure'
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using `GFS_SB_Expenditure'
 drop if _merge==2
 drop _merge
 
