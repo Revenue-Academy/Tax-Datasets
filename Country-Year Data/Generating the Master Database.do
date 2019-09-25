@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2017
-//Last update: September 24 2019.
+//Last update: September 25 2019.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -442,6 +442,40 @@ save 	`expense', replace
 use "Master dataset.dta", clear
 
 merge 1:1 Country_Code year using `expense'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
+
+//Labor Force Participation Ratios
+
+import excel "WDI Female to male labor participation ratio.xlsx", sheet("Data") ///
+ firstrow clear
+ 
+rename CountryName Country
+rename CountryCode Country_Code
+rename Time year
+rename Ratiooffemaletomalelaborfo LaborForceFtoM_Natl
+rename F LaborForceFtoM_ILO
+drop TimeCode
+drop if Country_Code==""
+
+foreach v in LaborForceFtoM_Natl LaborForceFtoM_ILO {
+
+	replace `v'="" if `v'==".."
+	destring `v', replace
+
+}
+
+label var LaborForceFtoM_Natl "[WDI] Labor Force Participation Female to Male (National Estimate)"
+label var LaborForceFtoM_ILO "[WDI] Labor Force Participation Female to Male (ILO Estimate)"
+
+tempfile LFFMR
+save	`LFFMR', replace
+
+use "Master dataset.dta", clear
+
+merge 1:1 Country_Code year using `LFFMR'
 drop if _merge==2
 drop _merge
 
