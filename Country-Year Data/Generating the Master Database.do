@@ -982,6 +982,55 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+//Starting a Business
+import excel "DBEXCEL.xlsx", sheet("Data") firstrow clear
+
+drop IndicatorCode E-S
+rename T Score
+
+keep if IndicatorName=="Starting a business - Score" | IndicatorName=="Starting a business: Cost - Men (% of income per capita)" ///
+ | IndicatorName=="Starting a business: Cost - Women (% of income per capita)" ///
+ | IndicatorName=="Starting a business: Minimum capital (% of income per capita)" ///
+ | IndicatorName=="Starting a business: Procedures required - Men (number)" ///
+ | IndicatorName=="Starting a business: Procedures required - Women (number)" ///
+ | IndicatorName=="Starting a business: Time - Men (days)" ///
+ | IndicatorName=="Starting a business: Time - Women (days)"
+ 
+encode IndicatorName, gen(indicator)
+reshape wide Score IndicatorName, i(CountryName) j(indicator)
+
+lab var Score1 "[DBI-19] Starting a business - Score"
+lab var Score2 "[DBI-19] Starting a business: Cost - Men (% of income per capita)"
+lab var Score3 "[DBI-19] Starting a business: Cost - Women (% of income per capita)"
+lab var Score4 "[DBI-19] Starting a business: Minimum capital (% of income per capita)"
+lab var Score5 "[DBI-19] Starting a business: Procedures required - Men (number)"
+lab var Score6 "[DBI-19] Starting a business: Procedures required - Women (number)"
+lab var Score7 "[DBI-19] Starting a business: Time - Men (days)"
+lab var Score8 "[DBI-19] Starting a business: Time - Women (days)"
+
+rename Score1 SB_Score
+rename Score2 SB_Cost_M
+rename Score3 SB_Cost_F
+rename Score4 SB_MinCap
+rename Score5 SB_Proc_M
+rename Score6 SB_Proc_F
+rename Score7 SB_Time_M
+rename Score8 SB_Time_F
+rename CountryName Country
+rename CountryCode Country_Code
+
+drop IndicatorName*
+
+tempfile dbibus
+save	`dbibus'
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code using `dbibus'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
 /************************/
 /*****Afrobarometer******/
 /************************/
