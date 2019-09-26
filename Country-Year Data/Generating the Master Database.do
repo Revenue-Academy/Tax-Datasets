@@ -302,6 +302,45 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
+//Informal Employment - Male and Female
+
+import excel "WDI Informal employment.xlsx", sheet("Data") firstrow clear
+
+rename CountryName Country
+rename Time year
+rename CountryCode Country_Code
+keep Country year Country_Code Informalemploymentfemaleo Informalemploymentmaleof
+rename (Informalemploymentfemaleo Informalemploymentmaleof) ///
+ (informal_emp_f informal_emp_m)
+drop if Country_Code==""
+ 
+foreach v in informal_emp_f informal_emp_m {
+
+	replace `v'="" if `v'==".."
+	destring `v', replace
+
+}
+
+gen informal_emp_diff_mf=informal_emp_m-informal_emp_f
+lab var informal_emp_diff_mf "Difference in informal employment (Male - Female, %)"
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[WDI] " + "`u'"
+	label var `v' "`x'"
+}
+
+tempfile informalemp
+save	`informalemp', replace
+
+use "Master dataset.dta", clear
+
+merge 1:1 Country_Code year using `informalemp'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
+
 //agriculture value added
 
 import excel using "WDI Agriculture VA.xlsx", firstrow cellrange(A1:E12804) clear
