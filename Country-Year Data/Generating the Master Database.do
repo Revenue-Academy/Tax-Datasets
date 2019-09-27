@@ -6436,7 +6436,7 @@ foreach v in Currenthealthexpenditureof Expenditureonprimaryeducation ///
 rename (Currenthealthexpenditureof Expenditureonprimaryeducation ///
  Expenditureonsecondaryeducati Expenditureontertiaryeducatio ///
  Governmentexpenditureoneducat J) (HealthExp_GDP Pri_Edu_GovExp Sec_Edu_GovExp ///
- Tri_Edu_GovExp Edu_Exp_Gov_GDP Edu_Exp_Gov_GovExp)
+ Ter_Edu_GovExp Edu_Exp_Gov_GDP Edu_Exp_Gov_GovExp)
  
 foreach v of varlist _all{
 	local u: variable label `v'
