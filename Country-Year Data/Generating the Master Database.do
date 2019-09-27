@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2017
-//Last update: September 25 2019.
+//Last update: September 27 2019.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -41,6 +41,7 @@ WDI - Human Capital Expenditure
 ASPIRE Beneficiary Incidence and Coverage
 GFS Social Benefits Expenditure
 OECD Tax Wedge
+WB Global Findex
 Trimming extra Variables
 */
 
@@ -6580,6 +6581,93 @@ save	`taxwedge', replace
 use "Master dataset.dta", clear
 
 merge 1:1 Country_Code year using `taxwedge'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
+
+/**********************/
+/***WB GLOBAL FINDEX***/
+/**********************/
+
+import excel "WB Global Findex Database.xlsx", sheet("Data") clear
+
+keep A B F G J M-R AW BI CI CU DG DS EE EQ FC FO GA GM GY HK HW IU JG JS KE KQ ///
+ NW OI QQ RK RW SI SU TI US WI WM XI YC ZG ABF ACP
+ 
+drop in 1
+ 
+foreach v in F G J M-R AW BI CI CU DG DS EE EQ FC FO GA GM GY HK HW IU JG JS KE ///
+ KQ  NW OI QQ RK RW SI SU TI US WI WM XI YC ZG ABF ACP {
+
+	destring `v', replace
+ 
+}
+
+lab var F   "[Findex] Account (% age 15+)"
+lab var G   "[Findex] Account, male (% age 15+)"
+lab var J   "[Findex] Account, female (% age 15+)"
+lab var M   "[Findex] Account, primary education or less (% age 15+)"
+lab var N   "[Findex] Account, secondary education or more (% age 15+)"
+lab var O   "[Findex] Account, income, poorest 40% (% age 15+)"
+lab var P   "[Findex] Account, income, richest 60% (% age 15+)"
+lab var Q   "[Findex] Account, rural (% age 15+)"
+lab var R   "[Findex] Financial Institution Account (% age 15+)"
+lab var AW  "[Findex] Used the internet to pay bills in the past year (% age 15+)"
+lab var BI  "[Findex] Used the internet to pay bills or buy something in the past year (% age 15+)"
+lab var CI  "[Findex] Saved to start, operate, or expand a farm or business (% age 15+)"
+lab var CU  "[Findex] Saved for old age (% age 15+)"
+lab var DG  "[Findex] Saved at a financial institution (% age 15+)"
+lab var DS  "[Findex] Saved using a savings club or a person outside the family (% age 15+)"
+lab var EE  "[Findex] Saved for education or school fees (% age 15+)"
+lab var EQ  "[Findex] Saved any money in the past year (% age 15+)"
+lab var FC  "[Findex] Outstanding housing loan (% age 15+)"
+lab var FO  "[Findex] Debit card ownership (% age 15+)"
+lab var GA  "[Findex] Borrowed for health or medical purposes (% age 15+)"
+lab var GM  "[Findex] Borrowed to start, operate, or expand a farm or business (% age 15+)"
+lab var GY  "[Findex] Borrowed from a store by buying on credit (% age 15+)"
+lab var HK  "[Findex] Borrowed for education or school fees (% age 15+)"
+lab var HW  "[Findex] Borrowed from a financial institution (% age 15+)"
+lab var IU  "[Findex] Borrowed from family or friends (% age 15+)"
+lab var JG  "[Findex] Borrowed from a savings club (% age 15+)"
+lab var JS  "[Findex] Borrwed any money in the past year (% age 15+)"
+lab var KE  "[Findex] Coming up with emergency funds: possible (% age 15+)"
+lab var KQ  "[Findex] Coming up with emergency funds: not possible (% age 15+)"
+lab var NW  "[Findex] Sent or received domestic remittances in the past year (% age 15+)"
+lab var OI  "[Findex] Received domestic remittances in the past year (% age 15+)"
+lab var QQ  "[Findex] Paid utility bills in the past year (% age 15+)"
+lab var RK  "[Findex] Received wages in the past year (% age 15+)"
+lab var RW  "[Findex] Paid school fees in the past year (% age 15+)"
+lab var SI  "[Findex] Received private sector wages in the past year (% age 15+)"
+lab var SU  "[Findex] Received public sector wages in the past year (% age 15+)"
+lab var TI  "[Findex] Received wages: into a financial institution account (% age 15+)"
+lab var US  "[Findex] Received government transfers in the past year (% age 15+)"
+lab var WI  "[Findex] Debit card used to make a purchase in the past year (% age 15+)"
+lab var WM  "[Findex] Received payments for agricultural products in the past year (% age 15+)"
+lab var XI  "[Findex] Received payments for self-employment in the past year (% age 15+)"
+lab var YC  "[Findex] Has a national identity card (% age 15+)"
+lab var ZG  "[Findex] Credit card ownership (% age 15+)"
+lab var ABF "[Findex] Made or received digital payments in the past year (% age 15+)"
+lab var ACP "[Findex] Mobile money account (% age 15+)"
+
+rename (A B F G J M-R AW BI CI CU DG DS EE EQ FC FO GA GM GY HK HW IU JG JS KE ///
+ KQ NW OI QQ RK RW SI SU TI US WI WM XI YC ZG ABF ACP) (year Country_Code ///
+ Account Account_m Account_f Account_pri Account_sec Account_bot40 Account_top60 ///
+ Account_rural FinInstAccount InternetBillPay InternetBillorPurchase ///
+ SavedforFarmorBusiness SavedforOldAge SavedatFinInst SavedatROSCA SavedforEduc ///
+ SavedAny OutstandingLoanHome DebitCard BorrowedMedical BorrowedforFarmorBusiness ///
+ BorrowedfromStore BorrowedforEduc BorrowedfromFinInst BorrowedfromFamily ///
+ BorrwedfromROSCA BorrwedAny EmergencyFunds EmergencyFunds_impossible ///
+ Remittances_Dom_SentorReceived Remittances_Dom_Rec UtilityBill_Paid Wages_Rec ///
+ SchoolFees_Paid Wages_Private_Rec Wages_Public_Rec Wages_Rec_FinInst Transfer_Rec ///
+ DebitCard_Used PaymentforAg PaymentforSelfEmp HasID CreditCard DigitalPayment ///
+ MobileMoneyAccount)
+ 
+tempfile findex
+save	`findex', replace
+
+use "Master dataset.dta", clear
+merge 1:1 Country_Code year using `findex'
 drop if _merge==2
 drop _merge
 
