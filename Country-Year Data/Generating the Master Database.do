@@ -42,6 +42,8 @@ ASPIRE Beneficiary Incidence and Coverage
 GFS Social Benefits Expenditure
 OECD Tax Wedge
 WB Global Findex
+CIT Productivity
+VAT C Efficiency
 Trimming extra Variables
 */
 
@@ -6672,6 +6674,119 @@ drop if _merge==2
 drop _merge
 
 save "Master dataset.dta", replace
+
+
+/****************************/
+/******CIT Productivity******/
+/****************************/
+
+import excel "KPMG tax rates.xlsx", firstrow clear
+
+
+reshape long CIT_rate, i(Country) j(year)
+
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong SAR"
+replace Country="Cote d'Ivoire" if Country=="Ivory Coast"
+replace Country="Korea, Rep." if Country=="Korea, Republic of"
+replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
+replace Country="Macao SAR, China" if Country=="Macau"
+replace Country="North Macedonia" if Country=="Macedonia"
+replace Country="West Bank and Gaza" if Country=="Palestinian Territory"
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
+replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="Eswatini" if Country=="Swaziland"
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Congo, Dem. Rep." if Country=="Congo (Democratic Republic of the)"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+drop Country
+
+tempfile CIT_rates
+save `CIT_rates'
+
+
+use "Master Dataset.dta"
+merge m:1 Country_Code year using `CIT_rates'
+drop if _merge==2
+drop _merge
+
+
+//CIT Productivity
+gen CIT_Productivity = (CIT/CIT_rate) * 100
+
+save "Master Dataset.dta", replace
+
+
+/****************************/
+/******VAT C Efficiency******/
+/****************************/
+
+//Consumption
+import excel "VAT C-efficiency expenditure data.xlsx", sheet("Data") firstrow clear
+drop TimeCode
+rename (Time CountryCode) (year Country_Code)
+rename CountryName Country
+rename Finalconsumptionexpenditure FCE_GDP 
+keep Country year Country_Code FCE_GDP
+
+tempfile Consumption
+save `Consumption'
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using `Consumption'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+//VAT rates
+import excel "Historic VAT statutory rates.xlsx", sheet("Sheet1") firstrow clear
+rename (B-L) (VAT_rate2007 VAT_rate2008 VAT_rate2009 VAT_rate2010 VAT_rate2011 VAT_rate2012 VAT_rate2013 VAT_rate2014 VAT_rate2015 ///
+ VAT_rate2016 VAT_rate2017)
+drop FOOTNOTES
+rename LOCATION Country
+
+reshape long VAT_rate, i(Country) j(year)
+
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="Hong Kong SAR, China" if Country=="Hong Kong SAR"
+replace Country="Korea, Rep." if Country=="Korea, Republic of"
+replace Country="Macao SAR, China" if Country=="Macau"
+replace Country="North Macedonia" if Country=="Macedonia"
+replace Country="St. Kitts and Nevis" if Country=="Saint Kitts and Nevis"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="St. Vincent and the Grenadines" if Country=="Saint Vincent and the Grenadines"
+replace Country="Slovak Republic" if Country=="Slovakia"
+replace Country="St. Martin (French part)" if Country=="St Maarten"
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="Eswatini" if Country=="Swaziland"
+
+//adding country codes for safe merging
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+
+tempfile VATrates
+save `VATrates'
+
+use "Master Dataset.dta", clear
+merge m:1 Country_Code year using `VATrates'
+drop if _merge==2
+drop _merge
+
+//C Efficiency
+gen C_Efficiency = (Value_Added_Tax) / (FCE_GDP * VAT_rate / 100)
+
+save "Master Dataset.dta", replace
+
 
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
