@@ -1057,7 +1057,7 @@ drop if _merge==2
 drop _merge
 
 save "Master Dataset.dta", replace
-
+/*
 //Starting a Business
 import excel "DBEXCEL.xlsx", sheet("Data") firstrow clear
 
@@ -1106,7 +1106,7 @@ drop if _merge==2
 drop _merge
 
 save "Master Dataset.dta", replace
-
+*/
 /************************/
 /*****Afrobarometer******/
 /************************/
