@@ -242,6 +242,7 @@ foreach v of varlist _all{
 
 label var year "year"
 label var Country "country"
+replace Reg=3 if Country=="Saint Vincent and the Grenadines"
 
 save "Master Dataset.dta", replace
 
