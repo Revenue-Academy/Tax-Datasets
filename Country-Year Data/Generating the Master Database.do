@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2017
-//Last update: September 27 2019.
+//Last update: November 20 2019.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -44,6 +44,7 @@ OECD Tax Wedge
 WB Global Findex
 CIT Productivity
 VAT C Efficiency
+USAID Collecting Taxes Database
 Trimming extra Variables
 */
 
@@ -6787,13 +6788,76 @@ gen C_Efficiency = (Value_Added_Tax) / (FCE_GDP * VAT_rate / 100)
 
 save "Master Dataset.dta", replace
 
+/*************************************/
+/***USAID Collecting Taxes Database***/
+/*************************************/
+
+import excel "CTD_MASTER_2017-18_-_Admin_and_Performance.xlsx", sheet("Admin") ///
+ firstrow clear
+
+keep country code year cost payertostaff poptostaff labortostaff e_*
+
+foreach v in e_reg e_file e_pay {
+
+	replace `v'="" if `v'=="n/d" | `v'=="n/a"
+	destring `v', replace
+	
+}
+
+tempfile usaid_admin
+save	`usaid_admin', replace
+
+import excel "CTD_MASTER_2017-18_-_Admin_and_Performance.xlsx", sheet("Performance") ///
+ firstrow clear
+ 
+keep country code year tax_capacity-vat_gcr
+
+foreach v in tax_capacity tax_effort tax_buoy vat_buoy cit_buoy pit_buoy vat_eff ///
+ vat_c_eff vat_gcr {
+
+	replace `v'="" if `v'=="N/d" | `v'=="N/a"
+	destring `v', replace
+	
+}
+
+merge 1:1 code year using `usaid_admin'
+drop _merge
+
+rename country Country
+rename code Country_Code
+
+lab var vat_eff "actual to potential VAT revenue (standard rate) to GDP"
+lab var vat_c_eff "actual to potential VAT revenue (standard rate) to Total Consumption Expenditure"
+lab var vat_gcr "actual to potential VAT revenue (standard rate) to Private Consumption Expenditure"
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[USAID CTD] " + "`u'"
+	label var `v' "`x'"
+}
+
+replace Country_Code="COD" if Country=="Congo, Dem. Rep."
+replace Country_Code="XKX" if Country=="Kosovo"
+replace Country_Code="PSE" if Country=="West Bank and Gaza"
+replace Country_Code="TLS" if Country=="Timor-Leste"
+replace Country_Code="ROU" if Country=="Romania"
+
+tempfile usaid_ctd
+save	`usaid_ctd', replace
+
+use "Master dataset.dta", clear
+merge 1:1 Country_Code year using `usaid_ctd'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
 
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
 
-drop country resourcerevenuenotes socialcontributionsnotes inc generalnotes cautionnotes ///
-	CountryName
+drop country resourcerevenuenotes socialcontributionsnotes inc generalnotes ///
+  cautionnotes CountryName
 sort Country year
 
 compress
