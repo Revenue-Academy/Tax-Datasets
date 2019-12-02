@@ -6941,6 +6941,42 @@ drop _merge
 
 save "Master dataset.dta", replace
 
+/**************************/
+/*** IMF Infrastructure ***/
+/**************************/
+
+import excel "Investment stock - IMF.xlsx", sheet("Database") firstrow clear
+
+foreach v in igov_rppp kgov_rppp ipriv_rppp kpriv_rppp ippp_rppp kppp_rppp ///
+ GDP_rppp kgov_n kpriv_n kppp_n GDP_n {
+
+	replace `v'="" if `v'=="-"
+	destring `v', replace
+ 
+}
+
+gen public_capital_stock=kgov_rppp/GDP_rppp
+gen public_capital_stock_inv=igov_rppp/GDP_rppp
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[IMF Infrastructure] " + "`u'"
+	label var `v' "`x'"
+}
+
+drop ifscode
+rename isocode Country_Code
+
+tempfile IMF_infrastructure
+save	`IMF_infrastructure', replace
+
+use "Master dataset.dta", clear
+merge 1:1 Country_Code year using `IMF_infrastructure'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
+
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
 /******************************/
