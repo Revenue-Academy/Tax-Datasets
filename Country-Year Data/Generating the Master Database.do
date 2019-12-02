@@ -45,6 +45,7 @@ WB Global Findex
 CIT Productivity
 VAT C Efficiency
 USAID Collecting Taxes Database
+WEF Infrastructure
 Trimming extra Variables
 */
 
@@ -6848,6 +6849,93 @@ save	`usaid_ctd', replace
 
 use "Master dataset.dta", clear
 merge 1:1 Country_Code year using `usaid_ctd'
+drop if _merge==2
+drop _merge
+
+save "Master dataset.dta", replace
+
+/**************************/
+/*** WEF Infrastructure ***/
+/**************************/
+
+import excel "WEF_data_2018.xlsx", sheet("data") firstrow clear
+ 
+keep if Indicator=="2nd pillar Infrastructure" | ///
+ Indicator=="GCI 4.0: 2.A Transport infrastructure" | ///
+ Indicator=="GCI 4.0: 2.B Utility infrastructure" | ///
+ Indicator=="GCI 4.0: Electricity infrastructure" | ///
+ Indicator=="GCI 4.0: Pillar 2: Infrastructure" | ///
+ Indicator=="GCI 4.0: Water infrastructure" | ///
+ Indicator=="Quality of air transport infrastructure" | ///
+ Indicator=="Quality of overall infrastructure" | ///
+ Indicator=="Quality of port infrastructure" | ///
+ Indicator=="Quality of railroad infrastructure"
+drop IndicatorId
+
+keep if SubindicatorType=="Score" 
+drop SubindicatorType
+drop F-O Q
+rename (CountryISO3 P R) (Country_Code yr2017 yr2018)
+
+reshape long yr, i(Country_Code Indicator) j(year)
+rename yr Score
+encode Indicator, gen(indicator)
+drop Indicator CountryName
+reshape wide Score, i(Country_Code year) j(indicator)
+rename Score1 Transport_Infrastrcture
+rename Score2 Utility_Infrastructure
+rename Score3 Electricity_Infrastructure
+rename Score4 Overall_Infrastructure
+rename Score5 Water_Infrastructure
+
+tempfile WEF_infrastructure_1718
+save	`WEF_infrastructure_1718', replace
+
+import excel "WEF_data_2018.xlsx", sheet("data") firstrow clear
+ 
+keep if Indicator=="2nd pillar Infrastructure" | ///
+ Indicator=="GCI 4.0: 2.A Transport infrastructure" | ///
+ Indicator=="GCI 4.0: 2.B Utility infrastructure" | ///
+ Indicator=="GCI 4.0: Electricity infrastructure" | ///
+ Indicator=="GCI 4.0: Pillar 2: Infrastructure" | ///
+ Indicator=="GCI 4.0: Water infrastructure" | ///
+ Indicator=="Quality of air transport infrastructure" | ///
+ Indicator=="Quality of overall infrastructure" | ///
+ Indicator=="Quality of port infrastructure" | ///
+ Indicator=="Quality of railroad infrastructure"
+drop IndicatorId
+
+keep if SubindicatorType=="1-7 Best"
+drop SubindicatorType CountryName
+drop P R
+rename (CountryISO3 F G H I J K L M N O Q) (Country_Code yr2008 yr2009 yr2010 ///
+ yr2011 yr2012 yr2013 yr2014 yr2015 yr2016 yr2017 yr2018)
+
+reshape long yr, i(Country_Code Indicator) j(year)
+encode Indicator, gen(indicator)
+drop Indicator
+rename yr Score
+reshape wide Score, i(Country_Code year) j(indicator)
+rename Score1 Air_Transport_Infrastructure_of7
+rename Score2 Overall_Infrastructure_of7
+rename Score3 Port_Infrastructure_of7
+rename Score4 Railroad_Infrastructure_of7
+
+merge 1:1 Country_Code year using `WEF_infrastructure_1718'
+drop _merge
+sort Country_Code year
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[WEF Infrastructure] " + "`u'"
+	label var `v' "`x'"
+}
+
+tempfile WEF_infrastructure
+save	`WEF_infrastructure', replace
+
+use "Master dataset.dta", clear
+merge 1:1 Country_Code year using `WEF_infrastructure'
 drop if _merge==2
 drop _merge
 
