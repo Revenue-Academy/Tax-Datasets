@@ -1196,8 +1196,20 @@ save "Afrobaro_r5_data.dta", replace
 use "Afrobaro_r5_data.dta", clear
 replace q26c=. if q26c==-1 | q26c==9
 replace q48c=. if q48c==-1 | q48c==9
-replace q50=.  if q50==-1  | q50==9  | q50==.a
-replace q51=.  if q51==-1  | q51==9  | q51==.a
+replace q50=. if q50==-1 | q50==9 | q50==.a
+gen must_vs_no_need_tax=.
+replace must_vs_no_need_tax=1 if q50==1
+replace must_vs_no_need_tax=2 if q50==2
+replace must_vs_no_need_tax=4 if q50==3
+replace must_vs_no_need_tax=5 if q50==4
+replace must_vs_no_need_tax=3 if q50==5
+replace q51=. if q51==-1 | q51==9 | q51==.a
+gen hightax_vs_lowtax=q51
+replace hightax_vs_lowtax=1 if q51==1
+replace hightax_vs_lowtax=2 if q51==2
+replace hightax_vs_lowtax=3 if q51==5
+replace hightax_vs_lowtax=4 if q51==3
+replace hightax_vs_lowtax=5 if q51==4
 replace q56i=. if q56i==-1 | q56i==9
 replace q59d=. if q59d==-1 | q59d==9
 replace q60f=. if q60f==-1 | q60f==9
@@ -1205,16 +1217,16 @@ replace q73a=. if q73a==-1 | q73a==9 | q73a==8 | q73a==.a
 replace q73c=. if q73c==-1 | q73c==9 | q73c==8 | q73c==.a
 replace q73e=. if q73e==-1 | q73e==9 | q73e==7 | q73e==.a
 qui label list Q77
-replace q77=.  if q77==-1  | q77==9995 | q77==9997 | q77==9998 | q77==9999
+replace q77=. if q77==-1 | q77==9995 | q77==9997 | q77==9998 | q77==9999
 rename q26c refuse_pay_tax
 tab refuse_pay_tax, gen(refuse_pay_tax_fac)
 rename q48c pp_must_pay_tax
 tab pp_must_pay_tax, gen(pp_must_pay_tax_fac)
-rename q50 must_vs_no_need_tax
+*rename q50 must_vs_no_need_tax
 tab must_vs_no_need_tax, gen(must_vs_no_need_tax_fac)
-rename q51 hightax_vs_lowtax
+*rename q51 hightax_vs_lowtax
 tab hightax_vs_lowtax, gen(hightax_vs_lowtax_fac)
-rename q56i often_avoid_tax
+gen often_avoid_tax=q56i+1 
 tab often_avoid_tax, gen(often_avoid_tax_fac)
 rename q59d trust_tax_dept
 tab trust_tax_dept, gen(trust_tax_dept_fac)
@@ -1263,26 +1275,48 @@ use "Afrobaro_r6_data.dta", replace
 replace q27d=. if q27d==-1 | q27d==9
 replace q42c=. if q42c==-1 | q42c==9 | q42c==98
 replace q44=. if q44==-1 | q44==9
+gen must_vs_no_need_tax=.
+replace must_vs_no_need_tax=1 if q44==1
+replace must_vs_no_need_tax=2 if q44==2
+replace must_vs_no_need_tax=4 if q44==3
+replace must_vs_no_need_tax=5 if q44==4
+replace must_vs_no_need_tax=3 if q44==5
 replace q52d=. if q52d==-1 | q52d==9
 replace q53f=. if q53f==-1 | q53f==9
 replace q65c=. if q65c==-1 | q65c==9 | q65c==98
+replace q65c=15 if q65c==1
+replace q65c=14 if q65c==2
+replace q65c=13 if q65c==3
+replace q65c=12 if q65c==4
+replace q65c=11 if q65c==5
+gen hightax_vs_lowtax=.
+replace hightax_vs_lowtax=1 if q65c==11
+replace hightax_vs_lowtax=2 if q65c==12
+replace hightax_vs_lowtax=3 if q65c==13
+replace hightax_vs_lowtax=4 if q65c==14
+replace hightax_vs_lowtax=5 if q65c==15
 /*note for q65c "It depends" was coded as "6", potentially skewing the mean ///
 	I have recoded it here as "3" in the "Neither support nor oppose" group*/
-replace q65c=3 if q65c==6
+replace hightax_vs_lowtax=3 if q65c==6
 replace q70b=. if q70b==-1 | q70b==9 | q70b==7
+gen often_avoid_tax=q70b
+replace often_avoid_tax=1 if q70b==4
+replace often_avoid_tax=2 if q70b==3
+replace often_avoid_tax=3 if q70b==2
+replace often_avoid_tax=4 if q70b==1
 rename q27d refuse_pay_tax
 tab refuse_pay_tax, gen(refuse_pay_tax_fac)
 rename q42c pp_must_pay_tax
 tab pp_must_pay_tax, gen(pp_must_pay_tax_fac)
-rename q44 must_vs_no_need_tax
+*rename q44 must_vs_no_need_tax
 tab must_vs_no_need_tax, gen(must_vs_no_need_tax_fac)
 rename q52d trust_tax_dept
 tab trust_tax_dept, gen(trust_tax_dept_fac)
 rename q53f corrupt_tax_offic
 tab corrupt_tax_offic, gen(corrupt_tax_offic_fac)
-rename q65c hightax_vs_lowtax
+*rename q65c hightax_vs_lowtax
 tab hightax_vs_lowtax, gen(hightax_vs_lowtax_fac)
-rename q70b often_avoid_tax
+*rename q70b often_avoid_tax
 tab often_avoid_tax, gen(often_avoid_tax_fac)
 collapse (mean) refuse_pay_tax pp_must_pay_tax must_vs_no_need_tax trust_tax_dept ///
  corrupt_tax_offic hightax_vs_lowtax often_avoid_tax corrupt_tax_offic_fac1 ///
@@ -1300,7 +1334,8 @@ gen year=2015
 gen round=6
 
 /*Merge in data from other rounds*/
-merge m:1 refuse_pay_tax pp_must_pay_tax must_vs_no_need_tax trust_tax_dept corrupt_tax_offic hightax_vs_lowtax often_avoid_tax country using `r5'
+merge m:1 refuse_pay_tax pp_must_pay_tax must_vs_no_need_tax trust_tax_dept ///
+ corrupt_tax_offic hightax_vs_lowtax often_avoid_tax country using `r5'
 drop _merge
 merge m:1 corrupt_tax_offic pay_property_tax country pp_must_pay_tax using `r4'
 drop _merge
@@ -1321,30 +1356,30 @@ lab var corrupt_tax_offic_fac1 "How corrupt are tax officials?  - - % answering 
 lab var corrupt_tax_offic_fac2 "How corrupt are tax officials?  - - % answering  2 (some of them) "
 lab var corrupt_tax_offic_fac3 "How corrupt are tax officials?  - - % answering  3 (a lot of them) "
 lab var corrupt_tax_offic_fac4 "How corrupt are tax officials?  - - % answering  4 (all of them) "
-lab var corrupt_tax_offic      "How corrupt are tax officials? Mean response (1-5) " 
+lab var corrupt_tax_offic      "How corrupt are tax officials? Mean response (1-4) " 
 
-lab var hightax_vs_lowtax_fac1 "Higher taxes with more government services vs lower taxes with fewer services  - - % answering  1 (strongly agree with statement 1) "
-lab var hightax_vs_lowtax_fac2 "Higher taxes with more government services vs lower taxes with fewer services  - - % answering  2 (agree with statement 1) "
-lab var hightax_vs_lowtax_fac3 "Higher taxes with more government services vs lower taxes with fewer services  - - % answering  3 (agree with statement 2) "
-lab var hightax_vs_lowtax_fac4 "Higher taxes with more government services vs lower taxes with fewer services  - - % answering  4 (strongly agree with statement 2) "
-lab var hightax_vs_lowtax_fac5 "Higher taxes with more government services vs lower taxes with fewer services  - - % answering  5 (agree with neither statements)"
+lab var hightax_vs_lowtax_fac1 "(Strong more services) Higher taxes with more government services vs lower taxes with fewer services  - - % answering  1 (strongly agree with statement 1) "
+lab var hightax_vs_lowtax_fac2 "(More services) Higher taxes with more government services vs lower taxes with fewer services  - - % answering  2 (agree with statement 1) "
+lab var hightax_vs_lowtax_fac3 "(Neither) Higher taxes with more government services vs lower taxes with fewer services  - - % answering  5 (agree with neither statements)"
+lab var hightax_vs_lowtax_fac4 "(Low tax) Higher taxes with more government services vs lower taxes with fewer services  - - % answering  3 (agree with statement 2) "
+lab var hightax_vs_lowtax_fac5 "(Strong low tax) Higher taxes with more government services vs lower taxes with fewer services  - - % answering  4 (strongly agree with statement 2) "
 
-lab var must_vs_no_need_tax_fac1 "Citizens must pay taxes vs no need to tax the people  - - % answering  1 (strongly agree with statement 1) "
-lab var must_vs_no_need_tax_fac2 "Citizens must pay taxes vs no need to tax the people  - - % answering  2 (agree with statement 1) "
-lab var must_vs_no_need_tax_fac3 "Citizens must pay taxes vs no need to tax the people  - - % answering  3 (agree with statement 2) "
-lab var must_vs_no_need_tax_fac4 "Citizens must pay taxes vs no need to tax the people  - - % answering  4 (strongly agree with statement 2) "
-lab var must_vs_no_need_tax_fac5 "Citizens must pay taxes vs no need to tax the people  - - % answering  5 (agree with neither) "
+lab var must_vs_no_need_tax_fac1 "(Strong must pay) Citizens must pay taxes vs no need to tax the people  - - % answering  1 (strongly agree with statement 1)"
+lab var must_vs_no_need_tax_fac2 "(Must pay) Citizens must pay taxes vs no need to tax the people  - - % answering  2 (agree with statement 1)"
+lab var must_vs_no_need_tax_fac3 "(Neither) Citizens must pay taxes vs no need to tax the people  - - % answering  5 (agree with neither)"
+lab var must_vs_no_need_tax_fac4 "(No need) Citizens must pay taxes vs no need to tax the people  - - % answering  3 (agree with statement 2)"
+lab var must_vs_no_need_tax_fac5 "(Strong no need) Citizens must pay taxes vs no need to tax the people  - - % answering  4 (strongly agree with statement 2)"
 
-lab var often_avoid_tax_fac1 "How often do people avoid paying taxes?  - - % answering  1 (never) "
-lab var often_avoid_tax_fac2 "How often do people avoid paying taxes?  - - % answering  2 (rarely) "
-lab var often_avoid_tax_fac3 "How often do people avoid paying taxes?  - - % answering  3 (often) "
-lab var often_avoid_tax_fac4 "How often do people avoid paying taxes?  - - % answering  4 (always) "
+lab var often_avoid_tax_fac1 "How often do people avoid paying taxes?  - - % answering  1 (never)"
+lab var often_avoid_tax_fac2 "How often do people avoid paying taxes?  - - % answering  2 (rarely)"
+lab var often_avoid_tax_fac3 "How often do people avoid paying taxes?  - - % answering  3 (often)"
+lab var often_avoid_tax_fac4 "How often do people avoid paying taxes?  - - % answering  4 (always)"
 
-lab var pp_must_pay_tax_fac1 "People must pay taxes  - - % answering  1 (strongly disagree) "
-lab var pp_must_pay_tax_fac2 "People must pay taxes  - - % answering  2 (disagree) "
-lab var pp_must_pay_tax_fac3 "People must pay taxes  - - % answering  3 (neutral) "
-lab var pp_must_pay_tax_fac4 "People must pay taxes  - - % answering  4 (agree) "
-lab var pp_must_pay_tax_fac5 "People must pay taxes  - - % answering  5 (strongly agree) "
+lab var pp_must_pay_tax_fac1 "People must pay taxes  - - % answering  1 (strongly disagree)"
+lab var pp_must_pay_tax_fac2 "People must pay taxes  - - % answering  2 (disagree)"
+lab var pp_must_pay_tax_fac3 "People must pay taxes  - - % answering  3 (neutral)"
+lab var pp_must_pay_tax_fac4 "People must pay taxes  - - % answering  4 (agree)"
+lab var pp_must_pay_tax_fac5 "People must pay taxes  - - % answering  5 (strongly agree)"
 lab var pp_must_pay_tax      "People must pay tax (mean response), 1-5 "
 
 lab var refuse_pay_tax_fac1 "Refused to pay tax or fee to government?  - - % answering  1 (no, would never do that) "
@@ -1378,10 +1413,7 @@ lab var why_avoid_tax_fac13 "Why do people avoid paying taxes? -- % answer = Gov
 lab var why_avoid_tax_fac14 "Why do people avoid paying taxes? -- % answer = Employers don't deduct or don't give to government "
 /*Note: due to the Stata command 'collapse' for an nominal variable, one ///
 	should not use the why_avoid_tax as it does not accurately reflect ///
-	the average answer*/
-
-/*Saving file*/
-save "Afrobaro_merged.dta", replace
+	the responses*/
 
 foreach v of varlist _all{
 	local u: variable label `v'
