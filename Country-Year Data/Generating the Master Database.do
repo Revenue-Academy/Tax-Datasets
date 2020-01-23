@@ -46,6 +46,7 @@ CIT Productivity
 VAT C Efficiency
 USAID Collecting Taxes Database
 WEF Infrastructure
+WDI Net ODA and Aid
 Trimming extra Variables
 */
 
@@ -7008,6 +7009,30 @@ drop if _merge==2
 drop _merge
 
 save "Master dataset.dta", replace
+
+/***************************/
+/*** WDI Net ODA and Aid ***/
+/***************************/
+
+import excel "Net ODA and Aid, WDIs.xlsx", sheet("Data") firstrow clear
+
+rename CountryCode Country_Code
+rename Time year
+rename NetODA Net_ODA
+lab var Net_ODA "[WDI] Net ODA and official aid received (% of GDP) (Current USD)"
+
+keep Country_Code year Net_ODA
+drop if Country_Code==""
+
+tempfile ODA
+save	`ODA', replace
+
+use "Master dataset.dta", clear
+merge 1:1 Country_Code year using `ODA'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
 
 /******************************/
 /***TRIMMING EXTRA VARIABLES***/
