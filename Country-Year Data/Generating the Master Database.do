@@ -1111,9 +1111,9 @@ drop _merge
 
 save "Master Dataset.dta", replace
 */
-/************************/
-/*****Afrobarometer******/
-/************************/
+/*********************/
+/*** Afrobarometer ***/
+/*********************/
 
 /*Import and convert Afrobarometer's .sav files and make lower case*/
 *ssc install usespss
@@ -1441,6 +1441,10 @@ save "Afrobaro_merged.dta", replace
 use "Master Dataset.dta", clear
 merge m:1 Country_Code year using "Afrobaro_merged.dta"
 drop if _merge==2
+drop _merge
+
+/*merge in Round 7*/
+merge 1:1 Country year using "merged_r7_data.dta", update
 drop _merge
 
 /*Expanding Afrobarometer to subsequent years*/
