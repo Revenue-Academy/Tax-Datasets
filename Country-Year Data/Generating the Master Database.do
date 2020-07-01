@@ -1792,6 +1792,7 @@ replace Reg=3 if Country=="St. Vincent and the Grenadines"
 
 save "Master Dataset.dta", replace
 
+
 /******************************/
 /****Digital Adoption Index****/
 /******************************/
@@ -3511,10 +3512,11 @@ save "Master Dataset.dta", replace
 /*********WGI**********/
 /**********************/
 
-import excel using "Worldwide Governance Indicators.xlsx", firstrow cellrange(A1:J4067) clear
+import excel using "WGI July 1 2020.xlsx", firstrow cellrange(A1:J4281) clear
 
 rename CountryCode Country_Code
 rename Time year
+drop TimeCode
 rename ControlofCorruption WGI_Corruption
 rename GovernmentEff WGI_Government
 rename PoliticalStability WGI_Stability
@@ -3528,12 +3530,13 @@ label var WGI_Regulatory "[WGI] Regulatory Quality"
 label var WGI_Law "[WGI] Rule of Law"
 label var WGI_Voice "[WGI] Voice and Accountability"
 
-save "WGI.dta", replace
+tempfile WGI
+save `WGI'
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "WGI.dta"
+merge m:1 Country_Code year using `WGI'
 drop if _merge==2
-drop _merge TimeCode
+drop _merge
 
 save "Master Dataset.dta", replace
 
