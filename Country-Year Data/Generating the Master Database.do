@@ -72,7 +72,7 @@ tempfile GDPLCU
 save `GDPLCU'
 
 //Prepare trade, GDP, and GDP per capita data from the WDI
-import excel "WDI Trade GDP GDP_PC.xlsx", clear firstrow cellrange(A1:G6294)
+import excel "WDI Trade GDP GDP_PC.xlsx", clear firstrow cellrange(A1:G13021)
 drop CountryName
 rename CountryCode Country_Code
 rename Time year
@@ -255,19 +255,22 @@ save "Master Dataset.dta", replace
 
 //manufacturing
 
-import excel using "Manufacturing Value Added.xlsx", firstrow cellrange(A1:E12804) clear
+import excel using "WDI July 1 2020.xlsx", firstrow cellrange(A1:P6511) clear
+save "WDI July 1 2020.dta", replace
 
 rename Manufactu manu_share
 rename CountryCode Country_Code
 rename Time year
 label var manu_share "[WDI] Manufacturing, value added (% of GDP)"
 
+keep Country_Code year manu_share
+
 save "Manufacturing VA.dta", replace
 
 use "Master Dataset.dta", clear
 merge m:1 Country_Code year using "Manufacturing VA.dta"
 drop if _merge==2
-drop _merge TimeCode
+drop _merge
 
 save "Master Dataset.dta", replace
 
@@ -300,6 +303,8 @@ while `yearcrawl'<=2017 {
 }
 sort CountryName year
 drop currentdata useornot TimeCode hasdata currentall
+
+keep Country_Code year informal
 
 save "WDI Informality.dta", replace
 
@@ -338,6 +343,8 @@ foreach v of varlist _all{
 	label var `v' "`x'"
 }
 
+keep Country_Code year informal_emp_f informal_emp_m informal_emp_diff
+
 tempfile informalemp
 save	`informalemp', replace
 
@@ -359,6 +366,8 @@ rename Time year
 drop TimeCode CountryName
 label var agri_share "[WDI] Agriculture, value added (% of GDP)"
 
+keep Country_Code year agri_share
+
 save "Agriculture VA.dta", replace
 
 use "Master Dataset.dta", clear
@@ -377,6 +386,8 @@ rename CountryCode Country_Code
 rename Time year
 drop CountryName
 label var resourcerents "[WDI] Natural resource rents as a percent of GDP"
+
+keep Country_Code year resourcerents
 
 save "Resource Richness.dta", replace
 
@@ -406,6 +417,8 @@ rename Time year
 drop CountryName
 label var oilrents "[WDI] Oil rents as a percent of GDP"
 
+keep Country_Code year oilrents
+
 save "Oil Richness.dta", replace
 
 use "Master Dataset.dta", clear
@@ -433,6 +446,8 @@ rename Time year
 drop TimeCode
 rename GINI GINI
 
+keep Country_Code year GINI
+
 save "WDI GINI.dta", replace
 
 use "Master Dataset.dta", clear
@@ -456,6 +471,8 @@ replace Population="" if Population==".."
 destring Population, replace
 
 label var Population "[WDI] Population"
+
+keep Country_Code year Population
 
 tempfile pop
 save 	`pop', replace
@@ -482,6 +499,8 @@ replace Gov_Exp_GDP="" if Gov_Exp_GDP==".."
 destring Gov_Exp_GDP, replace
 
 label var Gov_Exp_GDP "[WDI] Expense (% of GDP)"
+
+keep Country_Code year Gov_Exp_GDP
 
 tempfile expense
 save 	`expense', replace
@@ -516,6 +535,8 @@ foreach v in LaborForceFtoM_Natl LaborForceFtoM_ILO {
 
 label var LaborForceFtoM_Natl "[WDI] Labor Force Participation Female to Male (National Estimate)"
 label var LaborForceFtoM_ILO "[WDI] Labor Force Participation Female to Male (ILO Estimate)"
+
+keep Country_Code year LaborForceFtoM_Natl LaborForceFtoM_ILO
 
 tempfile LFFMR
 save	`LFFMR', replace
