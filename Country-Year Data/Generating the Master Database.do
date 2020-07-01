@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2017
-//Last update: November 20 2019.
+//Last update: May 26 2020.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -47,6 +47,7 @@ VAT C Efficiency
 USAID Collecting Taxes Database
 WEF Infrastructure
 WDI Net ODA and Aid
+WDI Inflation and CPI
 Trimming extra Variables
 */
 
@@ -1672,7 +1673,7 @@ replace Country="Micronesia, Fed. Sts." if Country=="Micronesia"
 drop if Country=="Morrocco"
 
 //stripping the variables down to a few key, tax-related variables
-keep Country year PI_13_1 PI_13_2 PI_13_3 PI_14_1 PI_14_2 PI_14_3 PI_15_1 PI_15_2 PI_15_3
+keep Country year PI_13_0 PI_13_1 PI_13_2 PI_13_3 PI_14_1 PI_14_2 PI_14_3 PI_15_1 PI_15_2 PI_15_3
 
 //filling out missing years
 gen assessmentyear=1
@@ -1722,51 +1723,66 @@ save "Master Dataset.dta", replace
 /*****************************/
 
 /*Import Excel*/
-import excel "Polity Dataset Democracy.xls", sheet("Sheet1") firstrow clear
+import excel "p4v2018.xlsx", sheet("p4v2017") firstrow clear
 
 drop if year<1990
-drop scode country
+drop cyear ccode democ autoc scode
 
-rename democracy score
-gen autocracy=(score<=-6 & score!=.)
-replace autocracy=. if score==.
-gen anocracy =(score>=-5 & score<=5 & score!=.)
-replace anocracy=. if score==.
-gen democracy=(score>= 6 & score!=.)
-replace democracy=. if score==.
+rename polity polityscore
+rename country Country
+gen autocracy=(polityscore<=-6 & polityscore!=.)
+replace autocracy=. if polityscore==.
+gen anocracy =(polityscore>=-5 & polityscore<=5 & polityscore!=.)
+replace anocracy=. if polityscore==.
+gen democracy=(polityscore>= 6 & polityscore!=.)
+replace democracy=. if polityscore==.
 
-gen politylessfree=(score<=0 & score!=.)
-replace politylessfree=. if score==.
-gen politymorefree=(score> 0 & score!=.)
-replace politymorefree=. if score==.
+gen politylessfree=(polityscore<=0 & polityscore!=.)
+replace politylessfree=. if polityscore==.
+gen politymorefree=(polityscore> 0 & polityscore!=.)
+replace politymorefree=. if polityscore==.
 label var autocracy "-6 or less score"
 label var anocracy "-5 to 5 score"
 label var democracy "6 or higher score"
 label var politylessfree "-10 to 0 score"
 label var politymorefree "1 to 10 score"
 
-rename score polityscore
-
-replace Country_Code="MKD" if Country_Code=="MAC"
+replace Country="Bosnia and Herzegovina" if Country=="Bosnia"
+replace Country="Congo, Democratic Republic of the" if Country=="Congo Kinshasa"
+replace Country="Congo, Republic of the" if Country=="Congo Brazzaville"
+replace Country="Cote d'Ivoire" if Country=="Cote D'Ivoire" | Country=="Ivory Coast"
+replace Country="Czechia" if Country=="Czech Republic"
+replace Country="Timor-Leste" if Country=="East Timor" | Country=="Timor Leste"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Korea, Republic of" if Country=="Korea South"
+replace Country="Lao People’s Democratic Republic" if Country=="Laos"
+replace Country="North Macedonia" if Country=="Macedonia"
+replace Country="Myanmar" if Country=="Myanmar (Burma)"
+replace Country="Russian Federation" if Country=="Russia"
+replace Country="Slovakia" if Country=="Slovak Republic"
+replace Country="Sudan" if Country=="Sudan-North"
+replace Country="Eswatini" if Country=="Swaziland"
+replace Country="Syrian Arab Republic" if Country=="Syria"
+replace Country="United Arab Emirates" if Country=="UAE"
 
 foreach v of varlist _all{
 
 	local u: variable label `v'
-	local x = "[Polity 2017] " + "`u'"
+	local x = "[Polity IV 2018] " + "`u'"
 	label var `v' "`x'"
 	
 }
 
-save "Polity Dataset Democracy.dta", replace
+duplicates drop Country year, force
+
+tempfile polity
+save	`polity', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Polity Dataset Democracy.dta"
+merge m:1 Country year using `polity'
 
 drop if _merge==2
 drop _merge
-
-replace politylessfree=(polityscore<=0 & polityscore!=.) if Country=="Macao SAR, China"
-replace politymorefree=(polityscore> 0 & polityscore!=.) if Country=="Macao SAR, China"
 
 sort Country year
 save "Master Dataset.dta", replace
@@ -7038,12 +7054,46 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/******************************/
-/***TRIMMING EXTRA VARIABLES***/
-/******************************/
+/*****************************/
+/*** WDI Inflation and CPI ***/
+/*****************************/
+
+import excel "WDI Inflation and CPI.xlsx", sheet("Data") firstrow clear
+
+drop TimeCode CountryName
+drop if CountryCode==""
+rename (CountryCode Time Inflationconsumerpricesannu Consumerpriceindex2010100) ///
+ (Country_Code year inflation CPI_2010)
+ 
+replace inflation="" if inflation==".."
+replace CPI="" if CPI==".."
+
+destring inflation, replace
+destring CPI, replace
+
+foreach v of varlist inflation CPI_2010 {
+	local u: variable label `v'
+	local x = "[WDI] " + "`u'"
+	label var `v' "`x'"
+}
+
+tempfile inflation
+save	`inflation', replace
+
+use "Master dataset.dta", clear
+merge 1:1 Country_Code year using `inflation'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/********************************/
+/*** TRIMMING EXTRA VARIABLES ***/
+/********************************/
 
 drop country resourcerevenuenotes socialcontributionsnotes inc generalnotes ///
   cautionnotes CountryName
+replace Country="Lao People's Democratic Republic" if Country=="Lao People’s Democratic Republic"
 sort Country year
 
 compress
