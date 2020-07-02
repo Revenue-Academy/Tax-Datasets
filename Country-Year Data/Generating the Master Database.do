@@ -2,8 +2,8 @@ clear all
 set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
-//they merge with ICTD data at the country-year level from 1990-2017
-//Last update: May 26 2020.
+//they merge with ICTD data at the country-year level from 1990-2020
+//Last update: July 2 2020.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -33,7 +33,7 @@ UNCTAD Tariffs
 WB FINSTATS 2019
 IMF Energy Subsidies
 TI Corruption Perceptions index
-Financial Secrecy Index
+Financial Secrecy Index 2018 & 2020
 Heritage Foundation freedoms
 IDA18 Cycle classifications
 UN e-Governance Index
@@ -48,6 +48,7 @@ USAID Collecting Taxes Database
 WEF Infrastructure
 WDI Net ODA and Aid
 WDI Inflation and CPI
+ILO informal employment
 Trimming extra Variables
 */
 
@@ -134,9 +135,46 @@ label var PIT_SC "PIT and Social Contributions"
 replace Country_Code="XKX" if Country_Code=="KSV"
 replace Country_Code="PSE" if Country_Code=="WBG"
 
+//extending to 2020
+insobs 3
+replace identifier = "ZWE2018" in 5489
+replace identifier = "ZWE2019" in 5490
+replace identifier = "ZWE2020" in 5491
+replace year = 2018 in 5489
+replace year = 2019 in 5490
+replace year = 2020 in 5491
+tsset id year
+tsfill, full
+
+encode Country, gen(cntry)
+encode Country_Code, gen(ISO)
+
+foreach v in cntry ISO Reg {
+
+	replace `v'=l.`v' if `v'==. & (year==2018 | year==2019 | year==2020) 
+
+}
+
+drop Country Country_Code
+decode cntry, gen(Country)
+decode ISO, gen(Country_Code)
+drop cntry ISO
+
+tostring year, gen(yr)
+egen ident2=concat(Country_Code yr)
+replace identifier=ident2 if identifier==""
+drop yr ident2
+order Country Country_Code, after(id)
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[WDI] " + "`u'"
+	label var `v' "`x'"
+}
+
 //merge in WDI data (prepared at top of dofile)
 merge m:1 Country_Code year using `WDIdata'
-drop if _merge !=3
+drop if _merge==2
 drop _merge
 
 //the rest of this section was first developed by Sebastian James
@@ -170,9 +208,9 @@ gen GDP_PC2 = GDP_PC^2
 
 //merge in GDPLCU data from excel version of ICTD data (prepped at top of this dofile)
 merge m:1 Country_Code year using `GDPLCU'
-drop if _merge !=3
+drop if _merge==2
 drop _merge
-
+drop if Country==""
 
 //calculating Tax buoyancy and efficiency
 foreach u in Tax_Revenue_incl_SC Tax_Revenue Income_Taxes PIT CIT Property_Tax Value_Added_Tax Excise_Taxes Trade_Taxes Social_Contributions { 
@@ -627,7 +665,8 @@ replace Country="Yemen" if Country=="Yemen, Rep."
 
 //adding country codes for safe merging
 merge m:1 Country using "Country Codes.dta"
-drop if _merge!=3
+drop if Country_Code==""
+drop if _merge==2
 drop _merge
 
 save "World Bank Enterprise Surveys.dta", replace
@@ -5994,7 +6033,6 @@ save "Master Dataset.dta", replace
 /*****************************/
 /***FINANCIAL SECRECY INDEX***/
 /*****************************/
-
 import excel "FSI Rankings 2018.xlsx", firstrow sheet("SS") cellrange(A1:V114) clear
 drop if Jurisdiction==""
 destring KI*, replace
@@ -6047,7 +6085,7 @@ drop if _merge!=3
 drop _merge
 
 tempfile secrecy
-save `secrecy'
+save 	`secrecy'
 
 use "Master Dataset.dta", clear
 merge m:1 Country_Code using `secrecy'
@@ -6059,6 +6097,23 @@ save "Master Dataset.dta", replace
 /**********************************/
 /***HERITAGE FOUNDATION FREEDOMS***/
 /**********************************/
+
+import excel "index2020_data.xls", sheet("Sheet1") firstrow clear
+
+keep CountryName PropertyRights TaxBurden BusinessFreedom-FinancialFreedom ///
+ TaxBurdenofGDP
+rename CountryName Country
+drop if Country==""
+
+foreach v of varlist _all {
+	replace `v'="" if `v'=="N/A"
+}
+
+destring PropertyRights-TaxBurdenofGDP, replace
+gen year=2020
+
+tempfile i20
+save `i20', replace
 
 import excel "index2019_data.xls", sheet("Sheet1") firstrow clear
 
@@ -6185,6 +6240,7 @@ append using `i16'
 append using `i17'
 append using `i18', force
 append using `i19'
+append using `i20'
 
 sort Country year
 
@@ -7106,6 +7162,54 @@ save	`inflation', replace
 
 use "Master dataset.dta", clear
 merge 1:1 Country_Code year using `inflation'
+drop if _merge==2
+drop _merge
+
+save "Master Dataset.dta", replace
+
+/*******************************/
+/*** ILO Informal Employment ***/
+/*******************************/
+
+import excel "ILO stat 2020.xlsx", clear
+
+rename (A B C E F G H) (Country indicator source year value note note_source)
+drop D
+
+drop in 1
+destring year value, replace
+
+replace Country="Brunei" if Country=="Brunei Darussalam"
+replace Country="Cabo Verde" if Country=="Cape Verde"
+replace Country="Congo, Dem. Rep." if Country=="Congo, Democratic Republic of the"
+replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
+replace Country="Gambia, The" if Country=="Gambia"
+replace Country="Kyrgyz Republic" if Country=="Kyrgyzstan"
+replace Country="Lao PDR" if Country=="Lao People's Democratic Republic"
+replace Country="Moldova" if Country=="Moldova, Republic of"
+replace Country="West Bank and Gaza" if Country=="Occupied Palestinian Territory"
+replace Country="St. Lucia" if Country=="Saint Lucia"
+replace Country="Tanzania" if Country=="Tanzania, United Republic of"
+replace Country="Vietnam" if Country=="Viet Nam"
+
+merge m:1 Country using "Country Codes.dta"
+drop if _merge!=3
+drop _merge
+
+rename value informal_emp_ilo
+lab var informal_emp_ilo "[ILO] Informal employment in non-agricultural employment (%) - Harmonized"
+encode note, gen(ilo_note)
+
+keep Country_Code year informal_emp_ilo ilo_note
+format ilo_note %24.0g
+
+compress
+
+tempfile ILO_informal
+save	`ILO_informal', replace
+
+use "Master dataset.dta", clear
+merge 1:1 Country_Code year using `ILO_informal'
 drop if _merge==2
 drop _merge
 
