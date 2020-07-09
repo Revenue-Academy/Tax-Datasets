@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2020
-//Last update: July 2 2020.
+//Last update: July 9 2020.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -96,18 +96,18 @@ rename (rev_inc_sc rev_ex_sc rev_ex_gr_inc_sc rev_ex_gr_ex_sc tot_res_rev ///
  tax_income tax_res_income tax_nr_income tax_indiv tax_corp tax_res_corp /// 
  tax_nr_corp tax_payr_workf tax_property tax_indirect res_indirect nr_indirect ///
  tax_g_s tax_gs_general tax_gs_vat tax_gs_excises tax_trade tax_trade_import ///
- tax_trade_export tax_other nontax res_nontax nr_nontax sc grants) (Total_Revenue_incl_SC ///
- Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC Tot_Rev_excl_grant_excl_SC ///
- Total_Resource_Revenue Total_Non_Res_Rev_incl_SC Tax_Revenue_incl_SC ///
- Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
+ tax_trade_export tax_other nontax res_nontax nr_nontax sc grants) ///
+ (Total_Revenue_incl_SC Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC ///
+ Tot_Rev_excl_grant_excl_SC Total_Resource_Revenue Total_Non_Res_Rev_incl_SC ///
+ Tax_Revenue_incl_SC Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
  Non_Res_Tax_Rev_excl_SC Direct_incl_SC_incl_Res Direct_incl_SC_excl_Res ///
  Direct_excl_SC_incl_Res Direct_excl_SC_excl_Res Income_Taxes ///
  Income_Taxes_Res Income_Taxes_Non_Res PIT CIT CIT_Res CIT_Non_Res ///
  Payroll_Workforce_Tax Property_Tax Indirect_Taxes Indirect_Taxes_Res ///
  Indirect_Taxes_Non_Res Tax_Goods_and_Services Tax_Goods_and_Services_Gen ///
  Value_Added_Tax Excise_Taxes Trade_Taxes Export_Taxes Import_Taxes Other_Taxes ///
- Non_Tax_Revenue Non_Tax_Revenue_Res Non_Tax_Revenue_Non_Res Social_Contributions Grants)
-
+ Non_Tax_Revenue Non_Tax_Revenue_Res Non_Tax_Revenue_Non_Res Social_Contributions ///
+ Grants)
 
 //reformat each tax measurement
 foreach v of varlist Total_Revenue_incl_SC ///
@@ -166,11 +166,7 @@ replace identifier=ident2 if identifier==""
 drop yr ident2
 order Country Country_Code, after(id)
 
-foreach v of varlist _all{
-	local u: variable label `v'
-	local x = "[WDI] " + "`u'"
-	label var `v' "`x'"
-}
+drop if Country=="South Sudan" & year<2010
 
 //merge in WDI data (prepared at top of dofile)
 merge m:1 Country_Code year using `WDIdata'
@@ -291,146 +287,36 @@ save "Master Dataset.dta", replace
 /**World Development Indicators**/
 /********************************/
 
-//manufacturing
-
 import excel using "WDI July 1 2020.xlsx", firstrow cellrange(A1:P6511) clear
 save "WDI July 1 2020.dta", replace
 
-rename Manufactu manu_share
+rename (Manufactu Informalemploymentoftotal Informalemploymentfemaleo ///
+ Informalemploymentmaleof Agricultureforestryandfishi OilrentsofGDPNYGDPPET ///
+ Totalnaturalresourcesrents GINIindexWorldBankestimate PopulationtotalSPPOPTOTL ///
+ ExpenseofGDPGCXPNTOTL Ratiooffemaletomalelaborfo P) (manu_share informal ///
+ informal_emp_f informal_emp_m agri_share oilrents resourcerents GINI Population ///
+ Gov_Exp_GDP LaborForceFtoM_ILO LaborForceFtoM_Natl)
 rename CountryCode Country_Code
 rename Time year
 label var manu_share "[WDI] Manufacturing, value added (% of GDP)"
-
-keep Country_Code year manu_share
-
-save "Manufacturing VA.dta", replace
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Manufacturing VA.dta"
-drop if _merge==2
-drop _merge
-
-save "Master Dataset.dta", replace
-
-//informality
-
-//data are sparse, so we assume the latest available figures are still valid
-//and apply them to later years
-import excel "WDI Informality.xlsx", firstrow cellrange(A1:E12370) clear
-
-rename Informal informal
-rename CountryCode Country_Code
-rename Time year
 label var informal "[WDI] Informal employment (% of total non-ag emp.) (miss. data given latest vals)"
-
-gen hasdata=.
-replace hasdata=1 if informal<.
-format informal %9.2f
-
-local yearcrawl = 1990
-gen currentdata=.
-gen useornot=.
-while `yearcrawl'<=2017 {
-	replace currentdata=informal if year==`yearcrawl' & hasdata==1
-	replace currentdata=. if year!=`yearcrawl'
-	cap drop currentall
-	bysort CountryName: egen currentall=max(currentdata)
-	replace useornot=currentall if currentall<.
-	replace informal=useornot if year==`yearcrawl'
-	local yearcrawl = `yearcrawl' + 1
-}
-sort CountryName year
-drop currentdata useornot TimeCode hasdata currentall
-
-keep Country_Code year informal
-
-save "WDI Informality.dta", replace
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "WDI Informality.dta"
-drop if _merge==2
-drop _merge
-
-save "Master Dataset.dta", replace
-
-//Informal Employment - Male and Female
-
-import excel "WDI Informal employment.xlsx", sheet("Data") firstrow clear
-
-rename CountryName Country
-rename Time year
-rename CountryCode Country_Code
-keep Country year Country_Code Informalemploymentfemaleo Informalemploymentmaleof
-rename (Informalemploymentfemaleo Informalemploymentmaleof) ///
- (informal_emp_f informal_emp_m)
-drop if Country_Code==""
- 
-foreach v in informal_emp_f informal_emp_m {
-
-	replace `v'="" if `v'==".."
-	destring `v', replace
-
-}
-
-gen informal_emp_diff_mf=informal_emp_m-informal_emp_f
-lab var informal_emp_diff_mf "Difference in informal employment (Male - Female, %)"
-
-foreach v of varlist _all{
-	local u: variable label `v'
-	local x = "[WDI] " + "`u'"
-	label var `v' "`x'"
-}
-
-keep Country_Code year informal_emp_f informal_emp_m informal_emp_diff
-
-tempfile informalemp
-save	`informalemp', replace
-
-use "Master dataset.dta", clear
-
-merge 1:1 Country_Code year using `informalemp'
-drop if _merge==2
-drop _merge
-
-save "Master dataset.dta", replace
-
-//agriculture value added
-
-import excel using "WDI Agriculture VA.xlsx", firstrow cellrange(A1:E12804) clear
-
-rename Agriculture agri_share
-rename CountryCode Country_Code
-rename Time year
-drop TimeCode CountryName
 label var agri_share "[WDI] Agriculture, value added (% of GDP)"
-
-keep Country_Code year agri_share
-
-save "Agriculture VA.dta", replace
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Agriculture VA.dta"
-drop if _merge==2
-drop _merge
-
-save "Master Dataset.dta", replace
-
-//resource richness
-
-import excel using "Natural Resource Rents WDI.xlsx", firstrow cellrange(A1:D12804) clear
-
-rename Totalnatural resourcerents
-rename CountryCode Country_Code
-rename Time year
-drop CountryName
 label var resourcerents "[WDI] Natural resource rents as a percent of GDP"
+label var oilrents "[WDI] Oil rents as a percent of GDP"
+label var LaborForceFtoM_Natl "[WDI] Labor Force Participation Female to Male (National Estimate)"
+label var LaborForceFtoM_ILO "[WDI] Labor Force Participation Female to Male (ILO Estimate)"
+label var Population "[WDI] Population"
+label var Gov_Exp_GDP "[WDI] Expense (% of GDP)"
+label var informal_emp_f "[WDI] Informal employment, female (% of total non-agricultural employment)"
+label var informal_emp_m "[WDI] Informal employment, male (% of total non-agricultural employment)"
 
-keep Country_Code year resourcerents
-
-save "Resource Richness.dta", replace
+tempfile WDI
+save	`WDI', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Resource Richness.dta"
+cap drop manu_share informal informal_emp_f informal_emp_m agri_share oilrents ///
+ resourcerents GINI Population Gov_Exp_GDP LaborForceFtoM_ILO LaborForceFtoM_Natl
+merge 1:1 Country_Code year using `WDI'
 drop if _merge==2
 drop _merge
 
@@ -443,27 +329,6 @@ replace resource_rich=1 if threeyearresource>=10 & threeyearresource<.
 replace resource_rich=0 if threeyearresource<10
 drop resource_tminus1 resource_tminus2 threeyearresource
 
-save "Master Dataset.dta", replace
-
-//oil richness
-
-import excel using "Oil Rents WDI.xlsx", firstrow cellrange(A1:D12804) clear
-
-rename Oilrentsof oilrents
-rename CountryCode Country_Code
-rename Time year
-drop CountryName
-label var oilrents "[WDI] Oil rents as a percent of GDP"
-
-keep Country_Code year oilrents
-
-save "Oil Richness.dta", replace
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Oil Richness.dta"
-drop if _merge==2
-drop _merge
-
 tsset cntry year
 gen oil_tminus1 = l.oilrents
 gen oil_tminus2 = l.oil_tminus1
@@ -475,181 +340,60 @@ drop oil_tminus1 oil_tminus2 threeyearoil
 
 save "Master Dataset.dta", replace
 
-//GINI inequality
+/**************************/
+/*** Enterprise Surveys ***/
+/**************************/
 
-import excel "WDI GINI.xlsx", firstrow cellrange(A1:E10851) clear
-rename CountryName Country
-rename CountryCode Country_Code
-rename Time year
-drop TimeCode
-rename GINI GINI
+use "ES_May_11_2020_Comprehensive.dta", clear
 
-keep Country_Code year GINI
+keep country b5 e11 e30 j7a b6a b6b j2 j3 j4 j5 j6 j14 g3 j11 j30a j30b j30c wt
+gen maj_obs_taxrate=0
+gen maj_obs_taxadmin=0
+gen maj_obs_licensing=0
+replace maj_obs_taxrate=1 if j30a>=3 & j30a<.
+replace maj_obs_taxadmin=1 if j30b>=3 & j30b<.
+replace maj_obs_licensing=1 if j30c>=3 & j30c<.
+gen yearsinformal=.
 
-save "WDI GINI.dta", replace
+gen year=substr(country, -4, 4)
+destring year, replace
 
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "WDI GINI.dta"
-drop if _merge==2
-drop _merge
+forval n = 0/9 {
+    replace country = subinstr(country, "`n'", "",.)
+}
 
-save "Master Dataset.dta", replace
+foreach v in b5 b6a b6b e11 j3 j5 {
 
-//Population
-
-import excel "WDI population.xlsx", sheet("Data") firstrow clear
-
-drop if CountryCode==""
-drop TimeCode
-rename CountryName Country
-rename CountryCode Country_Code
-rename Time year
-rename Population Population
-replace Population="" if Population==".."
-destring Population, replace
-
-label var Population "[WDI] Population"
-
-keep Country_Code year Population
-
-tempfile pop
-save 	`pop', replace
-
-use "Master dataset.dta", clear
-
-merge 1:1 Country_Code year using `pop'
-drop if _merge==2
-drop _merge
-
-save "Master dataset.dta", replace
-
-//Government Expense
-
-import excel "WDI govt expense.xlsx", sheet("Data") firstrow clear
-
-drop if CountryCode==""
-drop TimeCode
-rename CountryName Country
-rename CountryCode Country_Code
-rename Time year
-rename ExpenseofGDPGCXPNTOTL Gov_Exp_GDP
-replace Gov_Exp_GDP="" if Gov_Exp_GDP==".."
-destring Gov_Exp_GDP, replace
-
-label var Gov_Exp_GDP "[WDI] Expense (% of GDP)"
-
-keep Country_Code year Gov_Exp_GDP
-
-tempfile expense
-save 	`expense', replace
-
-use "Master dataset.dta", clear
-
-merge 1:1 Country_Code year using `expense'
-drop if _merge==2
-drop _merge
-
-save "Master dataset.dta", replace
-
-//Labor Force Participation Ratios
-
-import excel "WDI Female to male labor participation ratio.xlsx", sheet("Data") ///
- firstrow clear
- 
-rename CountryName Country
-rename CountryCode Country_Code
-rename Time year
-rename Ratiooffemaletomalelaborfo LaborForceFtoM_Natl
-rename F LaborForceFtoM_ILO
-drop TimeCode
-drop if Country_Code==""
-
-foreach v in LaborForceFtoM_Natl LaborForceFtoM_ILO {
-
-	replace `v'="" if `v'==".."
-	destring `v', replace
+	replace `v'=. if `v'<1
 
 }
 
-label var LaborForceFtoM_Natl "[WDI] Labor Force Participation Female to Male (National Estimate)"
-label var LaborForceFtoM_ILO "[WDI] Labor Force Participation Female to Male (ILO Estimate)"
+replace b5=. if b5==60 | b5==2205
+replace b6b=. if b6b==3 | b6b==5
+replace e11=. if e11==9
+replace e30=. if e30==9
 
-keep Country_Code year LaborForceFtoM_Natl LaborForceFtoM_ILO
+foreach v in e30 g3 j2 j4 j6 j7a j11 j14 j30a j30b j30c {
 
-tempfile LFFMR
-save	`LFFMR', replace
+	replace `v'=. if `v'<0
 
-use "Master dataset.dta", clear
-
-merge 1:1 Country_Code year using `LFFMR'
-drop if _merge==2
-drop _merge
-
-save "Master dataset.dta", replace
-
-/*****************************/
-/*****Enterprise Surveys******/
-/*****************************/
-
-//Informality
-
-clear all
-set more off
-
-import excel "Enterprise Surveys.xlsx", sheet("Informality") firstrow case(lower)
-
-drop subgroup topsub subgroupl average 
-rename percentoffirmsc percentcompeting
-rename percentoffirmsf percentregistered
-rename number yearsinformal
-rename percentoffirmsi informalconstraint
-replace percentc="" if percentc=="..."
-replace percentr="" if percentr=="..."
-replace years="" if years=="..."
-replace informal="" if informal=="..."
-destring percentc percentr years informal, replace
-
-rename economy country
-
-save "WBES informality.dta", replace
-
-//Tax
-
-clear all
-
-import excel "Enterprise Surveys.xlsx", sheet("Regulations and Taxes") firstrow case(lower)
-
-drop subgroup topsub subgroupl average numberof
-
-rename senior managementtime
-rename percentoffirmsvi firmsvisited
-rename daystoobtainano operatinglicensedays
-rename ifthere numbervisits
-rename daystoobtainac constructionpermitdays
-rename days importlicensedays
-rename o taxadminconstraint
-rename percentoffirmsidentifyingbus licenseconstraint
-rename percent taxrateconstraint
-replace operating="" if operating=="..." | operating=="n.a."
-replace constr="" if constr=="..." | constr=="n.a."
-replace impo="" if impo=="..." | impo=="n.a."
-replace taxa="" if taxa=="..."
-destring operating constr impo taxa, replace
-
-rename economy country
-
-save "WBES tax.dta", replace
-
-//Merging
-
-merge 1:1 _n using "WBES informality.dta"
-drop _merge
-
-foreach v of varlist _all{
-	local u: variable label `v'
-	local x = "[Enterprise Surveys] " + "`u'"
-	label var `v' "`x'"
 }
+
+replace j11=1 if j11==0
+replace j14=1 if j14==0
+
+// Recoding these variables to be converted in shares of Yes/No //
+replace b6a=0 if b6a==2
+replace e11=0 if e11==2
+replace j3=0  if j3==2
+replace j5=0  if j5==2
+
+replace yearsinformal=b6b-b5
+replace yearsinformal=. if yearsinformal<0
+
+collapse e11 e30 j7a b6a b6b j2 j3 j4 j5 j6 j14 g3 j11 maj_obs_taxrate ///
+maj_obs_taxadmin maj_obs_licensing yearsinformal [pweight=wt], by(country year)
+
 label var country "Economy"
 label var year "Year"
 rename country Country
@@ -662,6 +406,32 @@ replace Country="North Macedonia" if Country=="Macedonia, FYR"
 replace Country="Russia" if Country=="Russian Federation"
 replace Country="Venezuela, RB" if Country=="Venezuela, R.B."
 replace Country="Yemen" if Country=="Yemen, Rep."
+replace Country="Antigua and Barbuda" if Country=="Antiguaandbarbuda"
+replace Country="Bosnia and Herzegovina" if Country=="BosniaandHerzegovina"
+replace Country="Burkina Faso" if Country=="BurkinaFaso"
+replace Country="Central African Republic" if Country=="Centralafricanrepublic"
+replace Country="Cabo Verde" if Country=="CapeVerde"
+replace Country="Costa Rica" if Country=="Costarica"
+replace Country="Congo, Rep." if Country=="Congo"
+replace Country="Congo, Dem. Rep." if Country=="DRC"
+replace Country="Dominican Republic" if Country=="DominicanRepublic"
+replace Country="El Salvador" if Country=="ElSalvador"
+replace Country="Guinea-Bissau" if Country=="GuineaBissau"
+replace Country="Lao PDR" if Country=="LaoPDR"
+replace Country="Micronesia, Fed. Sts." if Country=="Micronesia"
+replace Country="Papua New Guinea" if Country=="PapuaNewGuinea"
+replace Country="Sierra Leone" if Country=="SierraLeone"
+replace Country="South Africa" if Country=="SouthAfrica"
+replace Country="Sri Lanka" if Country=="SriLanka"
+replace Country="St. Kitts and Nevis" if Country=="StKittsandNevis"
+replace Country="St. Lucia" if Country=="StLucia"
+replace Country="St. Vincent and the Grenadines" if Country=="StVincentandGrenadines"
+replace Country="Trinidad and Tobago" if Country=="TrinidadandTobago"
+replace Country="Bahamas, The" if Country=="Bahamas"
+replace Country="West Bank and Gaza" if Country=="West Bank And Gaza"
+replace Country="Gambia, The" if Country=="Gambia" | Country=="Gambia "
+replace Country="Venezuela, RB" if Country=="Venezuela"
+replace Country="South Sudan" if Country=="Southsudan"
 
 //adding country codes for safe merging
 merge m:1 Country using "Country Codes.dta"
@@ -669,97 +439,63 @@ drop if Country_Code==""
 drop if _merge==2
 drop _merge
 
-save "World Bank Enterprise Surveys.dta", replace
+lab var e11 "Compete against unregistered or informal firms? (% Yes)"
+lab var e30 "Practices of competitors in the informal sector are an obstacle? (4 Very Severe)"
+lab var j7a "Percent of total annual sales paid as informal payment (%)"
+lab var b6a "Share of firms that were formal at establishment"
+lab var b6b "Year of (mean) formal registration"
+lab var yearsinformal "Years (mean) that firms operated before formalizing?"
+lab var j2  "Percent of senior management's time spent dealing with government requirements (%)"
+lab var j3  "Share of firms visited or inspected by tax officials, last 12 months"
+lab var j4  "Number of visits (or required) by tax officials, last 12 months"
+lab var j5  "Share of meetings with a bribe expected or requested"
+lab var j6  "Percent of government contract typically paid as bribe to secure it (%)"
+lab var j14 "Days of approximate wait to receive operating license"
+lab var g3  "Days of approximate wait to receive construction permit"
+lab var j11 "Days of approximate wait to receive import license"
+lab var maj_obs_taxrate   "Share of firms reporting that tax rates are at least a major obstacle"
+lab var maj_obs_taxadmin  "Share of firms reporting that tax administration is at least a major obstacle"
+lab var maj_obs_licensing "Share of firms reporting that business licensing is at least a major obstacle"
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[Enterprise Surveys] " + "`u'"
+	label var `v' "`x'"
+}
+
+tempfile WB_ES
+save	`WB_ES'
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "World Bank Enterprise Surveys.dta"
+cap drop percentregistered registration_year_formal percentcompeting ///
+ informalconstraint constructionpermitdays managementtime firmsvisited ///
+ numbervisits visits_bribes govtcontract_bribe bribe_payment importlicensedays ///
+ operatinglicensedays taxrateconstraint taxadminconstraint licenseconstraint
+merge m:1 Country_Code year using `WB_ES'
 drop if _merge==2
 drop _merge
 
+rename (b6a b6b e11 e30 g3 j2 j3 j4 j5 j6 j7a j11 j14 maj_obs_taxrate ///
+ maj_obs_taxadmin maj_obs_licensing) (percentregistered registration_year_formal ///
+ percentcompeting informalconstraint constructionpermitdays managementtime ///
+ firmsvisited numbervisits visits_bribes govtcontract_bribe bribe_payment ///
+ importlicensedays operatinglicensedays taxrateconstraint taxadminconstraint ///
+ licenseconstraint)
 
 //The following routine takes data from a survey year and applies it to years in which
 //no survey was conducted, since findings from enterprise surveys are likely still
 //valid in the few years following a survey, and otherwise we would have a giant
 //dataset filled with missing values.
-gen surveyyear=.
-replace surveyyear=1 if managementtime<. | firmsvisited<. | numbervisits<. | operatinglicensedays<. ///
-	| constructionpermitdays<. | importlicensedays<. | taxrateconstraint<. | taxadminconstraint<. ///
-	| licenseconstraint<. | percentcompeting<. | percentregistered<. | yearsinformal<. ///
-	| informalconstraint<.
+tsset cntry year
 
-local yearcrawl = 2006
-gen yearcount = 0
-gen keepyear = 0
-while `yearcrawl'<=2017 {
-	replace yearcount=1 if year==`yearcrawl'
-	cap drop howmanysurveys
-	bysort Country yearcount: egen howmanysurveys=count(surveyyear)
-	replace keepyear = howmanysurveys if year==`yearcrawl'
-	local yearcrawl = `yearcrawl' + 1
+foreach v in percentregistered registration_year_formal percentcompeting ///
+ informalconstraint constructionpermitdays managementtime firmsvisited ///
+ numbervisits visits_bribes govtcontract_bribe bribe_payment importlicensedays ///
+ operatinglicensedays taxrateconstraint taxadminconstraint licenseconstraint {
+
+	replace `v'=l.`v' if `v'==. & l.`v'!=.
+ 
 }
-sort Country year
-drop yearcount howmanysurveys
-
-bysort Country keepyear: egen temp1 = mean(managementtime)
-bysort Country keepyear: egen temp2 = mean(firmsvisited)
-bysort Country keepyear: egen temp3 = mean(numbervisits)
-bysort Country keepyear: egen temp4 = mean(operatinglicensedays)
-bysort Country keepyear: egen temp5 = mean(constructionpermitdays)
-bysort Country keepyear: egen temp6 = mean(importlicensedays)
-bysort Country keepyear: egen temp7 = mean(taxrateconstraint)
-bysort Country keepyear: egen temp8 = mean(taxadminconstraint)
-bysort Country keepyear: egen temp9 = mean(licenseconstraint)
-bysort Country keepyear: egen temp10 = mean(percentcompeting)
-bysort Country keepyear: egen temp11 = mean(percentregistered)
-bysort Country keepyear: egen temp12 = mean(yearsinformal)
-bysort Country keepyear: egen temp13 = mean(informalconstraint)
-
-replace managementtime=temp1
-replace firmsvisited=temp2
-replace numbervisits=temp3
-replace operatinglicensedays=temp4
-replace constructionpermitdays=temp5
-replace importlicensedays=temp6
-replace taxrateconstraint=temp7
-replace taxadminconstraint=temp8
-replace licenseconstraint=temp9
-replace percentcompeting=temp10
-replace percentregistered=temp11
-replace yearsinformal=temp12
-replace informalconstraint=temp13
-drop temp1 temp2 temp3 temp4 temp5 temp6 temp7 temp8 temp9 temp10 temp11 temp12 temp13 keepyear surveyyear
-
-save "Master Dataset.dta", replace
-
-//bribery
-
-import excel "Enterprise Surveys Bribery Incidence.xlsx", ///
- sheet("Data") firstrow clear
-
-rename (SeriesName CountryName CountryCode) (BriberyIncidence Country Country_Code)
-
-drop SeriesCode
-drop in 222
-drop in 221
-drop in 220
-drop in 219
-drop in 218
-
-reshape long YR, i(Country) j(year)
-
-drop BriberyIncidence
-rename YR BriberyIncidence
-lab var BriberyIncidence "[Enterprise Surveys] % of firms experiencing at least one bribe payment request"
-
-replace BriberyIncidence="" if BriberyIncidence==".."
-destring BriberyIncidence, replace
-
-save "Enterprise Surveys Bribery Incidence.dta", replace
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Enterprise Surveys Bribery Incidence.dta"
-drop if _merge==2
-drop _merge
 
 save "Master Dataset.dta", replace
 
@@ -767,54 +503,51 @@ save "Master Dataset.dta", replace
 /*****CPIA Indicators******/
 /**************************/
 
-import excel "CPIAEXCEL.xlsx", sheet("Data") firstrow case(lower) clear
+import excel "Data Extract From CPIA.xlsx", sheet("Data") firstrow case(lower) clear
 
 /*Clean excel sheet*/
-rename countrycode country_code
+rename countrycode Country_Code
 rename countryname country
-rename e yr2005
-rename f yr2006
-rename g yr2007
-rename h yr2008
-rename i yr2009
-rename j yr2010
-rename k yr2011
-rename l yr2012
-rename m yr2013
-rename n yr2014
-rename o yr2015
-rename p yr2016
-rename q yr2017
+rename time year
 
-/*Reshape data from wide to long*/
-reshape long yr, i(country indicatorname) j(year)
-rename yr score
+rename cpiabuildinghumanresourcesra bhrrating
+rename cpiabusinessregulatoryenviron brerating
+rename cpiadebtpolicyrating dprating
+rename cpiaeconomicmanagementcluster emcaverage
+rename cpiaefficiencyofrevenuemobil ermrating
+rename cpiaequityofpublicresourceu eqprurating
+rename cpiafinancialsectorrating1 finsecrating
+rename cpiafiscalpolicyrating1low fispolrating
+rename cpiagenderequalityrating1l geneqrating
+rename cpiamacroeconomicmanagementra macromgmtrating
+rename cpiapoliciesforsocialinclusi polsieqcluster
+rename cpiapolicyandinstitutionsfor polinstenvsusrating
+rename cpiapropertyrightsandruleba prrbgovrating
+rename cpiapublicsectormanagementan pubsecmgmtinstclusteravg
+rename cpiaqualityofbudgetaryandfi qualbfmrating
+rename cpiaqualityofpublicadministr qualpubadminrating
+rename cpiasocialprotectionrating1 sprating
+rename cpiastructuralpoliciescluster strpolclusteravg
+rename cpiatraderating1lowto6hi traderating
+rename cpiatransparencyaccountabilit transacctcorrpsrating
+rename idaresourceallocationindex1 idaresallocindex
 
-/*Separate out each indicators' score*/
-gen bhrrating=score if indicatorname=="CPIA building human resources rating (1=low to 6=high)"
-gen brerating=score if indicatorname=="CPIA business regulatory environment rating (1=low to 6=high)"
-gen dprating=score if indicatorname=="CPIA debt policy rating (1=low to 6=high)"
-gen emcaverage=score if indicatorname=="CPIA economic management cluster average (1=low to 6=high)"
-gen ermrating=score if indicatorname=="CPIA efficiency of revenue mobilization rating (1=low to 6=high)"
-gen eqprurating=score if indicatorname=="CPIA equity of public resource use rating (1=low to 6=high)"
-gen finsecrating=score if indicatorname=="CPIA financial sector rating (1=low to 6=high)"
-gen fispolrating=score if indicatorname=="CPIA fiscal policy rating (1=low to 6=high)"
-gen geneqrating=score if indicatorname=="CPIA gender equality rating (1=low to 6=high)"
-gen macromgmtrating=score if indicatorname=="CPIA macroeconomic management rating (1=low to 6=high)"
-gen polsieqcluster=score if indicatorname=="CPIA policies for social inclusion/equity cluster average (1=low to 6=high)"
-gen polinstenvsusrating=score if indicatorname=="CPIA policy and institutions for environmental sustainability rating (1=low to 6=high)"
-gen prrbgovrating=score if indicatorname=="CPIA property rights and rule-based governance rating (1=low to 6=high)"
-gen pubsecmgmtinstclusteravg=score if indicatorname=="CPIA public sector management and institutions cluster average (1=low to 6=high)"
-gen qualbfmrating=score if indicatorname=="CPIA quality of budgetary and financial management rating (1=low to 6=high)"
-gen qualpubadminrating=score if indicatorname=="CPIA quality of public administration rating (1=low to 6=high)"
-gen sprating=score if indicatorname=="CPIA social protection rating (1=low to 6=high)"
-gen strpolclusteravg=score if indicatorname=="CPIA structural policies cluster average (1=low to 6=high)"
-gen traderating=score if indicatorname=="CPIA trade rating (1=low to 6=high)"
-gen transacctcorrpsrating=score if indicatorname=="CPIA transparency, accountability, and corruption in the public sector rating (1=low to 6=high)"
-gen idaresallocindex=score if indicatorname=="IDA resource allocation index (1=low to 6=high)"
-drop score
+foreach v in bhrrating brerating dprating emcaverage ermrating eqprurating ///
+ finsecrating fispolrating geneqrating macromgmtrating polsieqcluster ///
+ polinstenvsusrating prrbgovrating pubsecmgmtinstclusteravg qualbfmrating ///
+ qualpubadminrating sprating strpolclusteravg traderating transacctcorrpsrating ///
+ idaresallocindex {
 
-collapse (firstnm) bhrrating brerating dprating emcaverage ermrating eqprurating finsecrating fispolrating geneqrating macromgmtrating polsieqcluster polinstenvsusrating prrbgovrating pubsecmgmtinstclusteravg qualbfmrating qualpubadminrating sprating strpolclusteravg traderating transacctcorrpsrating idaresallocindex, by (country year country_code)
+	replace `v'="" if `v'==".."
+	destring `v', replace
+
+}
+
+drop if Country_Code=="FXS" | Country_Code=="DSF" | Country_Code=="DNS" | ///
+ Country_Code=="NXS" | Country_Code=="IDA" | Country_Code=="DXS" | ///
+ Country_Code=="DSC" | Country_Code=="NRS" | Country_Code=="NLS" | ///
+ Country_Code=="RRS" | Country_Code=="RSN" | Country_Code=="RSO" | ///
+ Country_Code=="DSS" | Country_Code==""
 
 /*label variables*/
 label var bhrrating "[CPIA] Building human resources rating (1=low to 6=high)"
@@ -839,28 +572,20 @@ label var traderating "[CPIA] Trade rating (1=low to 6=high)"
 label var transacctcorrpsrating "[CPIA] Transparency, accountability, and corruption in the public sector rating (1=low to 6=high)"
 label var idaresallocindex "[CPIA] IDA resource allocation index (1=low to 6=high)"
 
-rename country_code Country_Code
-save "CPIA Indicators.dta", replace
+drop country timecode
+
+tempfile CPIA_indicators
+save 	`CPIA_indicators.dta', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "CPIA Indicators.dta"
-drop if _merge==2
-drop _merge
-
-/*Sort and save database*/
-sort Country_Code year
-
-/*Expand CPIA data to subsequent years*/
-tsset cntry year
-
-foreach var in bhrrating brerating dprating emcaverage ermrating eqprurating ///
+cap drop bhrrating brerating dprating emcaverage ermrating eqprurating ///
  finsecrating fispolrating geneqrating macromgmtrating polsieqcluster ///
  polinstenvsusrating prrbgovrating pubsecmgmtinstclusteravg qualbfmrating ///
- qualpubadminrating sprating strpolclusteravg traderating transacctcorrpsrating {
- 
-	replace `var'=l.`var' if `var'==.
- 
- }
+ qualpubadminrating sprating strpolclusteravg traderating transacctcorrpsrating ///
+ idaresallocindex
+merge 1:1 Country_Code year using `CPIA_indicators.dta', update
+drop if _merge==2
+drop _merge
 
 save "Master Dataset.dta", replace
 
@@ -950,228 +675,25 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/*************************/
-/*****Doing Business******/
-/*************************/
+/**********************/
+/*** Doing Business ***/
+/**********************/
 
-/*Import excel sheet*/
-import excel "Historical-data---complete-data-with-scores.xlsx", sheet("All Data") ///
- firstrow case(lower) clear
+use "Doing Business Historical - Paying Taxes.dta", clear
+drop rank
 
-/*Clean excel sheet*/
-drop in 1
-rename a country_code
-rename b country
-replace c="1" if c=="East Asia & Pacific"
-replace c="2" if c=="Europe & Central Asia"
-replace c="3" if c=="Latin America & Caribbean"
-replace c="4" if c=="Middle East & North Africa"
-replace c="5" if c=="South Asia"
-replace c="6" if c=="Sub-Saharan Africa"
-replace c="7" if c=="High income: OECD"
-label define regions 1 "East Asia & Pacific" 2 "Europe & Central Asia" ///
- 3 "Latin America & Caribbean" 4 "Middle East & North Africa" 5 "South Asia" ///
- 6 "Sub-Saharan Africa" 7 "High income: OECD"
-destring c, replace
-label values c regions
-rename c region
-replace d="1" if d=="Low income"
-replace d="2" if d=="Lower middle income"
-replace d="3" if d=="Upper middle income"
-replace d="4" if d=="High income"
-label define income_groups 1 "Low income" 2 "Lower middle income" ///
- 3 "Upper middle income" 4 "High income"
-destring d, replace
-label values d income_groups
-rename d income_group
-destring e, replace
-rename e year
-
-/*Only keep 'Paying Taxes' variables*/
-keep payingtaxes country_code country region income_group year dq dr ds dt du ///
- dv dw dx dy dz ea eb ec ed ee ef eg eh ei ej
-
-/*Clean 'Paying Taxes' variables*/
-destring payingtaxes, replace
-label var payingtaxes "Rank - Paying Taxes DB 2019"
-rename payingtaxes ranktaxes19
-destring dq, replace
-label var dq "Score - Paying Taxes (DB 17-19 methodology)"
-rename dq scoretaxes1719
-destring dr, replace
-label var dr "Score - Paying Taxes (DB 06-16 methodology)"
-rename dr scoretaxes0616
-replace ds = "-9" if ds == "No Practice"
-destring ds, replace
-label var ds "Payments (number per year)"
-rename ds npayments
-replace dt = "-9" if dt == "No Practice"
-destring dt, replace
-label var dt "Time (hours per year)"
-rename dt timepayments
-replace du = "-9" if du== "No Practice"
-destring du, replace
-label var du "Total tax and contribution rate (% of profit)"
-rename du ttr
-replace dv = "-9" if dv== "No Practice"
-destring dv, replace
-label var dv "Profit tax (% of profit)"
-rename dv profittax
-replace dw = "-9" if dw== "No Practice"
-destring dw, replace
-label var dw "Labor tax and contributions (% of profit)"
-rename dw labortax
-replace dx = "-9" if dx== "No Practice"
-destring dx, replace
-label var dx "Other taxes (% of profit)"
-rename dx othertax
-replace dy = "-9" if dy== "No Practice"
-replace dy = "-8" if dy== "No VAT"
-replace dy = "-7" if dy== "No VAT refund per case study scenario"
-destring dy, replace
-label var dy "Time to comply with VAT refund (hours) (DB 17-19 methodology)"
-rename dy timevat
-replace dz = "-9" if dz== "No Practice"
-replace dz = "-8" if dz== "No VAT"
-replace dz = "-7" if dz== "No VAT refund per case study scenario"
-destring dz, replace
-label var dz "Time to obtain VAT refund (weeks) (DB 17-19 methodology)"
-rename dz timevatrefund
-replace ea = "-9" if ea== "No Practice"
-replace ea = "-6" if ea== "No corporate income tax"
-destring ea, replace
-label var ea "Time to comply with a corporate income tax correction (hours) (DB 17-19 methodology)"
-rename ea corpcompliancetime
-replace eb = "-9" if eb== "No Practice"
-replace eb = "-6" if eb== "No corporate income tax"
-destring eb, replace
-label var eb "Time to complete a corporate income tax correction (weeks) (DB 17-19 methodology)"
-rename eb corpcompletiontime
-destring ec, replace
-label var ec "Score - Postfiling index (0-100) (DB 17-19 methodology)"
-rename ec scorepostfiling
-destring ed, replace
-label var ed "Score - Payments (number per year)"
-rename ed scorepayments
-destring ee, replace
-label var ee "Score - Time (hours per year)"
-rename ee scoretime
-destring ef, replace
-label var ef "Score - Total tax and contribution rate (% of profit)"
-rename ef scorettr
-replace eg = "-8" if eg== "No VAT"
-destring eg, replace
-label var eg "Score - Time to comply with VAT refund (hours) (DB 17-19 methodology)"
-rename eg scoretimevatrefundcomply
-replace eh = "-8" if eh== "No VAT"
-destring eh, replace
-label var eh "Score - Time to obtain VAT refund (weeks) (DB 17-19 methodology)"
-rename eh scoretimevatrefundobtain
-replace ei="-6" if ei== "No corporate income tax"
-destring ei, replace
-label var ei "Score - Time to comply with a corporate income tax correction (hours) (DB 17-19 methodology)"
-rename ei scorecorpcompliancetime
-replace ej="-6" if ej== "No corporate income tax"
-destring ej, replace
-label var ej "Score - Time to complete a corporate income tax correction (weeks) (DB 17-19 methodology)"
-rename ej scorecorpcompletiontime
-
-/*One country, France has a value of -0.2 for profittax, however the rest are 
-various kinds of missing values*/
-foreach var of varlist ranktaxes19-scorecorpcompletiontime {
-
-	replace `var'=. if `var'<-1
-
-}
-
-rename country Country
-rename country_code Country_Code
-drop region income_group
-
-foreach v of varlist _all{
-	local u: variable label `v'
-	local x = "[Doing Business] " + "`u'"
-	label var `v' "`x'"
-}
-label var year "year"
-label var Country "country"
-label var Country_Code "code"
-
-replace Country="Cote d'Ivoire" if Country=="Côte d'Ivoire"
-replace Country="Egypt" if Country=="Egypt, Arab Rep."
-replace Country="Iran" if Country=="Iran, Islamic Rep."
-replace Country="North Macedonia" if Country=="Macedonia, FYR"
-replace Country="Russia" if Country=="Russian Federation"
-replace Country="Syria" if Country=="Syrian Arab Republic"
-replace Country="Sao Tome and Principe" if Country=="São Tomé and Príncipe"
-replace Country="Yemen" if Country=="Yemen, Rep."
-//drop a partly Non-ISO code
-drop Country_Code
-
-//adding country codes for safe merging
-merge m:1 Country using "Country Codes.dta"
-drop if _merge!=3
-drop _merge
-drop Country
-
-save "Doing Business Historical - Paying Taxes.dta", replace
+tempfile DBI_historic
+save	`DBI_historic', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Doing Business Historical - Paying Taxes.dta"
+cap drop scoretaxes1719 scoretaxes0616 npayments timepayments ttr profittax ///
+ labortax othertax timevat timevatrefund corpcompliancetime corpcompletiontime ///
+ scorepostfiling scorepayments scoretime scorettr scoretimevatrefundcomply ///
+ scoretimevatrefundobtain scorecorpcompliancetime scorecorpcompletiontime
+merge 1:1 Country_Code year using `DBI_historic'
 drop if _merge==2
 drop _merge
 
-save "Master Dataset.dta", replace
-/*
-//Starting a Business
-import excel "DBEXCEL.xlsx", sheet("Data") firstrow clear
-
-drop IndicatorCode E-S
-rename T Score
-
-keep if IndicatorName=="Starting a business - Score" | IndicatorName=="Starting a business: Cost - Men (% of income per capita)" ///
- | IndicatorName=="Starting a business: Cost - Women (% of income per capita)" ///
- | IndicatorName=="Starting a business: Minimum capital (% of income per capita)" ///
- | IndicatorName=="Starting a business: Procedures required - Men (number)" ///
- | IndicatorName=="Starting a business: Procedures required - Women (number)" ///
- | IndicatorName=="Starting a business: Time - Men (days)" ///
- | IndicatorName=="Starting a business: Time - Women (days)"
- 
-encode IndicatorName, gen(indicator)
-reshape wide Score IndicatorName, i(CountryName) j(indicator)
-
-lab var Score1 "[DBI-19] Starting a business - Score"
-lab var Score2 "[DBI-19] Starting a business: Cost - Men (% of income per capita)"
-lab var Score3 "[DBI-19] Starting a business: Cost - Women (% of income per capita)"
-lab var Score4 "[DBI-19] Starting a business: Minimum capital (% of income per capita)"
-lab var Score5 "[DBI-19] Starting a business: Procedures required - Men (number)"
-lab var Score6 "[DBI-19] Starting a business: Procedures required - Women (number)"
-lab var Score7 "[DBI-19] Starting a business: Time - Men (days)"
-lab var Score8 "[DBI-19] Starting a business: Time - Women (days)"
-
-rename Score1 SB_Score
-rename Score2 SB_Cost_M
-rename Score3 SB_Cost_F
-rename Score4 SB_MinCap
-rename Score5 SB_Proc_M
-rename Score6 SB_Proc_F
-rename Score7 SB_Time_M
-rename Score8 SB_Time_F
-rename CountryName Country
-rename CountryCode Country_Code
-
-drop IndicatorName*
-
-tempfile dbibus
-save	`dbibus'
-
-use "Master Dataset.dta", clear
-merge m:1 Country_Code using `dbibus'
-drop if _merge==2
-drop _merge
-
-save "Master Dataset.dta", replace
-*/
 /*********************/
 /*** Afrobarometer ***/
 /*********************/
@@ -1778,17 +1300,17 @@ sort Country year
 
 save "Master Dataset.dta", replace
 
-/*****************************/
-/******Polity IV Dataset******/
-/*****************************/
+/************************/
+/*** Polity V Dataset ***/
+/************************/
 
 /*Import Excel*/
-import excel "p4v2018.xlsx", sheet("p4v2017") firstrow clear
+import excel "p5v2018.xls", sheet("Data") firstrow clear
 
 drop if year<1990
-drop cyear ccode democ autoc scode
+drop p5 cyear ccode democ autoc scode prior-regtrans
 
-rename polity polityscore
+rename polity2 polityscore
 rename country Country
 gen autocracy=(polityscore<=-6 & polityscore!=.)
 replace autocracy=. if polityscore==.
@@ -1828,7 +1350,7 @@ replace Country="United Arab Emirates" if Country=="UAE"
 foreach v of varlist _all{
 
 	local u: variable label `v'
-	local x = "[Polity IV 2018] " + "`u'"
+	local x = "[Polity V 2020] " + "`u'"
 	label var `v' "`x'"
 	
 }
@@ -1839,6 +1361,10 @@ tempfile polity
 save	`polity', replace
 
 use "Master Dataset.dta", clear
+cap drop flag fragment polity polity2 polityscore durable xrreg xrcomp xropen ///
+ xconst parreg parcomp exrec exconst polcomp prior emonth eday eyear eprec interim ///
+ bmonth bday byear bprec post change d4 sf regtrans autocracy anocracy democracy ///
+ politylessfree politymorefree
 merge m:1 Country year using `polity'
 
 drop if _merge==2
@@ -3594,7 +3120,8 @@ tempfile WGI
 save `WGI'
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using `WGI'
+cap drop WGI_*
+merge 1:1 Country_Code year using `WGI'
 drop if _merge==2
 drop _merge
 
@@ -5656,9 +5183,9 @@ sort Country year
 save "Master Dataset.dta", replace
 
 
-/*********************************************/
-/***Cross-Country Database of Fiscal Policy***/
-/*********************************************/
+/***********************************************/
+/*** Cross-Country Database of Fiscal Policy ***/
+/***********************************************/
 
 use "fs_data_pub.dta", clear
 
@@ -5695,10 +5222,11 @@ drop if _merge!=3
 drop _merge
 drop Country
 
-save "Fiscal Space Data.dta", replace
+tempfile fs
+save	`fs', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "Fiscal Space Data.dta"
+merge 1:1 Country_Code year using `fs'
 drop if _merge==2
 drop _merge
 
@@ -5758,15 +5286,16 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/*****************/
-/***WDI CUSTOMS***/
-/*****************/
+/*******************/
+/*** WDI CUSTOMS ***/
+/*******************/
 
-import excel "WDI Customs data.xlsx", sheet("3908d76d-d7c5-4e3d-b2f4-4593976") ///
- cellrange(A1:I6077) firstrow clear
+import excel "Data Extract From WDI, Customs.xlsx", sheet("Data") ///
+ firstrow clear
 
 rename (CountryName CountryCode Time H) (Country Country_Code year Customs_LCU)
 drop TimeCode
+drop if Country_Code==""
 
 foreach v of varlist Averagetimetoclearexportsth BurdenofcustomsprocedureWEF ///
  Customsandotherimportduties Customs_LCU LogisticsperformanceindexEff {
@@ -5782,18 +5311,21 @@ foreach v of varlist _all{
 	label var `v' "`x'"
 }
  
-save "WDI Customs.dta", replace
+tempfile WDI_Customs
+save `WDI_Customs', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "WDI Customs.dta"
+cap drop Averagetimetoclearexportsth BurdenofcustomsprocedureWEF ///
+ Customsandotherimportduties Customs_LCU LogisticsperformanceindexEff
+merge 1:1 Country_Code year using `WDI_Customs'
 drop if _merge==2
 drop _merge
 
 save "Master Dataset.dta", replace
 
-/********************/
-/***UNCTAD TARIFFS***/
-/********************/
+/**********************/
+/*** UNCTAD TARIFFS ***/
+/**********************/
 
 import delimited us_tariff_06356461732761.csv, clear 
 
@@ -5981,16 +5513,16 @@ drop _merge
 /***TI CORRUPTION PERCEPTIONS INDEX***/
 /*************************************/
 
-import excel "2018_CPI_FullDataSet.xlsx", sheet("CPI Timeseries 2012 - 2018") ///
+import excel "CPI2019.xlsx", sheet("CPI Timeseries 2012 - 2019") ///
  firstrow clear
  
-rename (CorruptionPer D H L O R U X) (Country CPI2018 CPI2017 CPI2016 CPI2015 ///
- CPI2014 CPI2013 CPI2012)
+rename (CorruptionPer D H L P S V Y AB) (Country CPI2019 CPI2018 CPI2017 CPI2016 ///
+ CPI2015 CPI2014 CPI2013 CPI2012)
  
-drop B C E F G I J K M N P Q S T V W Y Z
+keep Country CPI*
 drop in 1/2
 
-destring CPI2018-CPI2012, replace
+destring CPI2019-CPI2012, replace
 
 reshape long CPI, i(Country) j(year)
 
@@ -6021,10 +5553,12 @@ merge m:1 Country using "Country Codes.dta"
 drop if _merge!=3
 drop _merge
 
-save "TI Corruption data.dta", replace
+tempfile TI_Corruption
+save	`TI_Corruption', replace
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using "TI Corruption data.dta"
+cap drop TI_CPI
+merge 1:1 Country_Code year using `TI_Corruption'
 drop if _merge==2
 drop _merge
 
@@ -6551,11 +6085,11 @@ drop _merge
 
 save "Master Dataset.dta", replace
 
-/*************************************/
-/***WDI - Human Capital Expenditure***/
-/*************************************/
+/***************************************/
+/*** WDI - Human Capital Expenditure ***/
+/***************************************/
 
-import excel "WDIs Health and Education expenditures 2000-2018.xlsx", sheet("Data") ///
+import excel "WDIs Health and Education expenditures 1990-2019.xlsx", sheet("Data") ///
  firstrow clear
 
 rename (CountryName CountryCode Time) (Country Country_Code year)
@@ -6586,15 +6120,17 @@ tempfile WDIhumancap
 save	`WDIhumancap'
 
 use "Master Dataset.dta", clear
-merge m:1 Country_Code year using `WDIhumancap'
+cap drop HealthExp_GDP Pri_Edu_GovExp Sec_Edu_GovExp Ter_Edu_GovExp ///
+ Edu_Exp_Gov_GDP Edu_Exp_Gov_GovExp
+merge 1:1 Country_Code year using `WDIhumancap'
 drop if _merge==2
 drop _merge
 
 save "Master Dataset.dta", replace
 
-/***********************************************/
-/***ASPIRE Benficiary Inicidence and Coverage***/
-/***********************************************/
+/*************************************************/
+/*** ASPIRE Benficiary Inicidence and Coverage ***/
+/*************************************************/
 
 import excel "ASPIRE beneficiary incidence and coverage 1999-2016.xlsx", sheet("Data") ///
  firstrow clear
@@ -6930,9 +6466,7 @@ save "Master Dataset.dta", replace
 import excel "CTD_MASTER_2017-18_-_Admin_and_Performance.xlsx", sheet("Admin") ///
  firstrow clear
 
-keep country code year cost payertostaff poptostaff labortostaff e_*
-
-foreach v in e_reg e_file e_pay {
+foreach v in e_reg e_file e_pay function ltu customs autonomy {
 
 	replace `v'="" if `v'=="n/d" | `v'=="n/a"
 	destring `v', replace
@@ -6960,10 +6494,16 @@ drop _merge
 
 rename country Country
 rename code Country_Code
+drop inc
 
 lab var vat_eff "actual to potential VAT revenue (standard rate) to GDP"
 lab var vat_c_eff "actual to potential VAT revenue (standard rate) to Total Consumption Expenditure"
 lab var vat_gcr "actual to potential VAT revenue (standard rate) to Private Consumption Expenditure"
+lab var cost "cost of collection (% of collection)"
+lab var function "tax administration is based on business function"
+lab var ltu "large taxpayer unit is present"
+lab var customs "customs and domestic tax operate as a single integrated unit"
+lab var autonomy "tax administration has some degree of autonomy"
 
 foreach v of varlist _all{
 	local u: variable label `v'
@@ -6981,6 +6521,9 @@ tempfile usaid_ctd
 save	`usaid_ctd', replace
 
 use "Master dataset.dta", clear
+cap drop tax_capacity tax_effort tax_buoy vat_buoy cit_buoy pit_buoy vat_eff ///
+ vat_c_eff vat_gcr region inc code_yr cost payertostaff poptostaff labortostaff ///
+ function ltu customs autonomy e_reg e_file e_pay
 merge 1:1 Country_Code year using `usaid_ctd'
 drop if _merge==2
 drop _merge
