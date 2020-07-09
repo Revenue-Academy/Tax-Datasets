@@ -15,7 +15,7 @@ Doing Business
 Afrobarometer
 Actionaid Tax Treaties
 PEFA
-Polity IV Dataset
+Polity V Dataset
 Digital Adoption Index
 GSMA (SSA only)
 Harmonized List of FCV
