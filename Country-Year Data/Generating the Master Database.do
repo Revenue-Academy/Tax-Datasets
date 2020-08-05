@@ -338,62 +338,6 @@ replace oil_rich=0 if threeyearoil<10
 drop oil_tminus1 oil_tminus2 threeyearoil
 
 save "Master Dataset.dta", replace
-/********************************/
-/**World Development Indicators**/
-/********************************/
-
-import excel using "WDI July 1 2020.xlsx", firstrow cellrange(A1:P6511) clear
-save "WDI July 1 2020.dta", replace
-
-rename (Manufactu Informalemploymentoftotal Informalemploymentfemaleo ///
- Informalemploymentmaleof Agricultureforestryandfishi OilrentsofGDPNYGDPPET ///
- Totalnaturalresourcesrents GINIindexWorldBankestimate PopulationtotalSPPOPTOTL ///
- ExpenseofGDPGCXPNTOTL Ratiooffemaletomalelaborfo P) (manu_share informal ///
- informal_emp_f informal_emp_m agri_share oilrents resourcerents GINI Population ///
- Gov_Exp_GDP LaborForceFtoM_ILO LaborForceFtoM_Natl)
-rename CountryCode Country_Code
-rename Time year
-label var manu_share "[WDI] Manufacturing, value added (% of GDP)"
-label var informal "[WDI] Informal employment (% of total non-ag emp.) (miss. data given latest vals)"
-label var agri_share "[WDI] Agriculture, value added (% of GDP)"
-label var resourcerents "[WDI] Natural resource rents as a percent of GDP"
-label var oilrents "[WDI] Oil rents as a percent of GDP"
-label var LaborForceFtoM_Natl "[WDI] Labor Force Participation Female to Male (National Estimate)"
-label var LaborForceFtoM_ILO "[WDI] Labor Force Participation Female to Male (ILO Estimate)"
-label var Population "[WDI] Population"
-label var Gov_Exp_GDP "[WDI] Expense (% of GDP)"
-label var informal_emp_f "[WDI] Informal employment, female (% of total non-agricultural employment)"
-label var informal_emp_m "[WDI] Informal employment, male (% of total non-agricultural employment)"
-
-tempfile WDI
-save	`WDI', replace
-
-use "Master Dataset.dta", clear
-cap drop manu_share informal informal_emp_f informal_emp_m agri_share oilrents ///
- resourcerents GINI Population Gov_Exp_GDP LaborForceFtoM_ILO LaborForceFtoM_Natl
-merge 1:1 Country_Code year using `WDI'
-drop if _merge==2
-drop _merge
-
-tsset cntry year
-gen resource_tminus1 = l.resourcerents
-gen resource_tminus2 = l.resource_tminus1
-egen threeyearresource=rowmean(resourcerents resource_tminus1 resource_tminus2)
-gen resource_rich=.
-replace resource_rich=1 if threeyearresource>=10 & threeyearresource<.
-replace resource_rich=0 if threeyearresource<10
-drop resource_tminus1 resource_tminus2 threeyearresource
-
-tsset cntry year
-gen oil_tminus1 = l.oilrents
-gen oil_tminus2 = l.oil_tminus1
-egen threeyearoil=rowmean(oilrents oil_tminus1 oil_tminus2)
-gen oil_rich=.
-replace oil_rich=1 if threeyearoil>=10 & threeyearoil<.
-replace oil_rich=0 if threeyearoil<10
-drop oil_tminus1 oil_tminus2 threeyearoil
-
-save "Master Dataset.dta", replace
 
 /**************************/
 /*** Enterprise Surveys ***/
