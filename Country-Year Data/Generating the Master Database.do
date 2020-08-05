@@ -1,6 +1,3 @@
-clear all
-set more off
-
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2020
 //Last update: August 5, 2020.
@@ -51,6 +48,9 @@ WDI Inflation and CPI
 ILO informal employment
 Trimming extra Variables
 */
+
+clear all
+set more off
 
 /**********************************/
 /*****ICTD & GTT Calculations******/
@@ -461,6 +461,16 @@ foreach v of varlist _all{
 	local x = "[Enterprise Surveys] " + "`u'"
 	label var `v' "`x'"
 }
+
+foreach v in b6a b6b e11 e30 g3 j2 j3 j4 j5 j6 j7a j11 j14 maj_obs_taxrate ///
+ maj_obs_taxadmin maj_obs_licensing {
+
+	format `v' %9.2g
+
+}
+
+replace e11=100*e11
+replace b6a=100*b6a
 
 tempfile WB_ES
 save	`WB_ES'
@@ -6878,8 +6888,15 @@ save "Master Dataset.dta", replace
 /*** TRIMMING EXTRA VARIABLES ***/
 /********************************/
 
-cap drop country resourcerevenuenotes socialcontributionsnotes inc generalnotes ///
-  cautionnotes CountryName
+drop country CountryName TimeCode code_yr income Country_ID //Extra variables picked up along the way
+drop xrreg xrcomp xropen exrec polity flag fragment polcomp politylessfree parreg ///
+ politymorefree parcomp region //Extra [Polity V Project] variables
+drop ilo_note //Extra [ILO] note on series changes
+drop gsmaReg connections* //Entirety of the [GSMA - Africa] database
+drop why_avoid_tax_fac* //Extra [LB] LatinoBarometro variables on why respondents avoid paying taxes
+drop AllSA_Rur_BenInc_1st SPL_Rur_BenInc_1st SPL_Rur_BenInc_2nd SPL_Rur_BenInc_3rd ///
+ SPL_Rur_BenInc_4th SPL_Rur_BenInc_5th Cov_Rur_AllSA Cov_Rur_SPL Cov_Rur_SPL_1st ///
+ Cov_Rur_SPL_2nd Cov_Rur_SPL_3rd Cov_Rur_SPL_4th Cov_Rur_SPL_5th //Extra variables from the [ASPIRE] database on coverage of Social Proection for rural individuals
 replace Country="Lao People's Democratic Republic" if Country=="Lao People’s Democratic Republic"
 sort Country year
 
