@@ -3,7 +3,7 @@ set more off
 
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2020
-//Last update: July 9 2020.
+//Last update: August 5, 2020.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
@@ -57,18 +57,22 @@ Trimming extra Variables
 /**********************************/
 
 //pull local-currency GDP from the ICTD excel sheet
-import excel "ICTD excel.xlsx", clear sheet("GDP Series") firstrow cellrange(A2:AM200)
+import excel "ICTDWIDERGRD_2020.xlsx", sheet("GDP Series") clear firstrow
+
+drop Notes
 local yearcounter = 1980
-foreach var of varlist B-AM {
+foreach var of varlist B-AO {
 	rename `var' GDP_LCU`yearcounter'
 	local yearcounter = `yearcounter' + 1
 }
 reshape long GDP_LCU, i(ISO) j(year)
 label var GDP_LCU "Millions of LCU and almost always comes from the IMF's WEO (Apr 2019)"
 rename ISO Country_Code
+
 //syncing iso codes to WBG standard
 replace Country_Code="XKX" if Country_Code=="KSV"
 replace Country_Code="PSE" if Country_Code=="WBG"
+
 tempfile GDPLCU
 save `GDPLCU'
 
@@ -84,47 +88,45 @@ rename GDPpercapita GDP_PC
 tempfile WDIdata
 save `WDIdata'
 
-//open and rename variables from new ICTD dataset
-use "Merged.dta", clear
-rename country Country
-rename source gov_data_source
-rename iso Country_Code
-rename reg Reg
-rename (rev_inc_sc rev_ex_sc rev_ex_gr_inc_sc rev_ex_gr_ex_sc tot_res_rev ///
- tot_nres_rev_inc_sc tax_inc_sc tax_ex_sc resourcetaxes nrtax_inc_sc nrtax_ex_sc ///
- direct_inc_sc_inc_rt direct_inc_sc_ex_rt direct_ex_sc_inc_rt direct_ex_sc_ex_rt ///
- tax_income tax_res_income tax_nr_income tax_indiv tax_corp tax_res_corp /// 
- tax_nr_corp tax_payr_workf tax_property tax_indirect res_indirect nr_indirect ///
- tax_g_s tax_gs_general tax_gs_vat tax_gs_excises tax_trade tax_trade_import ///
- tax_trade_export tax_other nontax res_nontax nr_nontax sc grants) ///
- (Total_Revenue_incl_SC Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC ///
- Tot_Rev_excl_grant_excl_SC Total_Resource_Revenue Total_Non_Res_Rev_incl_SC ///
- Tax_Revenue_incl_SC Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
- Non_Res_Tax_Rev_excl_SC Direct_incl_SC_incl_Res Direct_incl_SC_excl_Res ///
+////open and rename variables from new ICTD dataset
+import excel "ICTDWIDERGRD_2020.xlsx", sheet("Merged") clear firstrow
+rename (ISO Source Year TotalRevenue R S T TotalResourceRevenue TotalNonResourceRevenueinc Taxes X ResourceTaxes ///
+ NonResourceTax AA DirectTaxes AC AD AE TaxesonIncomeProfitsCapit AG AH AI AJ AK ///
+ AL TaxesonPayrollWorkforce PropertyTaxes IndirectTaxes AP AQ TaxesonGoodsandServices ///
+ AS AT AU TaxesonInternationalTrade AW AX OtherTaxes NonTaxRevenue BA BB ///
+ SocialContributions Grants) (Country_Code gov_data_source year Total_Revenue_incl_SC Total_Revenue_excl_SC ///
+ Tot_Rev_excl_grant_incl_SC Tot_Rev_excl_grant_excl_SC Total_Resource_Revenue /// 
+ Total_Non_Res_Rev_incl_SC Tax_Revenue_incl_SC Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
+ Non_Res_Tax_Rev_excl_SC Direct_incl_SC_incl_Res Direct_incl_SC_excl_Res /// 
  Direct_excl_SC_incl_Res Direct_excl_SC_excl_Res Income_Taxes ///
- Income_Taxes_Res Income_Taxes_Non_Res PIT CIT CIT_Res CIT_Non_Res ///
- Payroll_Workforce_Tax Property_Tax Indirect_Taxes Indirect_Taxes_Res ///
+ Income_Taxes_Res Income_Taxes_Non_Res PIT CIT CIT_Res CIT_Non_Res /// 
+ Payroll_Workforce_Tax Property_Tax Indirect_Taxes Indirect_Taxes_Res /// 
  Indirect_Taxes_Non_Res Tax_Goods_and_Services Tax_Goods_and_Services_Gen ///
- Value_Added_Tax Excise_Taxes Trade_Taxes Export_Taxes Import_Taxes Other_Taxes ///
+ Value_Added_Tax Excise_Taxes Trade_Taxes Import_Taxes Export_Taxes Other_Taxes ///
  Non_Tax_Revenue Non_Tax_Revenue_Res Non_Tax_Revenue_Non_Res Social_Contributions ///
  Grants)
 
+drop in 1/2
+drop MergeCode Inc GeneralNotes Caution1AccuracyQualityorCo Caution1Notes ///
+ Caution2ResourceRevenuestax Caution3UnexcludedResourceRe ResourceRevenueNotes ///
+ Caution4InconsistencieswithS Socialcontributionsnotes BE BF BG BH BI BJ BK BL ///
+  BM BN BO BP BQ BR BS BT
+destring year, replace
+ 
+foreach v of varlist Total_Revenue_incl_SC-Grants {
+
+	destring `v', replace
+	replace `v'=100*`v'
+
+}
+
 //reformat each tax measurement
-foreach v of varlist Total_Revenue_incl_SC ///
- Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC Tot_Rev_excl_grant_excl_SC ///
- Total_Resource_Revenue Total_Non_Res_Rev_incl_SC Tax_Revenue_incl_SC ///
- Tax_Revenue Resource_Taxes Non_Res_Tax_Rev_incl_SC ///
- Non_Res_Tax_Rev_excl_SC Direct_incl_SC_incl_Res Direct_incl_SC_excl_Res ///
- Direct_excl_SC_incl_Res Direct_excl_SC_excl_Res Income_Taxes ///
- Income_Taxes_Res Income_Taxes_Non_Res PIT CIT CIT_Res CIT_Non_Res ///
- Payroll_Workforce_Tax Property_Tax Indirect_Taxes Indirect_Taxes_Res ///
- Indirect_Taxes_Non_Res Tax_Goods_and_Services Tax_Goods_and_Services_Gen ///
- Value_Added_Tax Excise_Taxes Trade_Taxes Export_Taxes Import_Taxes Other_Taxes ///
- Non_Tax_Revenue Non_Tax_Revenue_Res Non_Tax_Revenue_Non_Res Social_Contributions Grants {
+foreach v of varlist Total_Revenue_incl_SC-Grants {
 	format `v' %2.1f
 }
 
 drop if year<1990
+drop if Country_Code==""
 
 sort Country_Code year
 
@@ -136,18 +138,15 @@ replace Country_Code="XKX" if Country_Code=="KSV"
 replace Country_Code="PSE" if Country_Code=="WBG"
 
 //extending to 2020
-insobs 3
-replace identifier = "ZWE2018" in 5489
-replace identifier = "ZWE2019" in 5490
-replace identifier = "ZWE2020" in 5491
-replace year = 2018 in 5489
-replace year = 2019 in 5490
-replace year = 2020 in 5491
-tsset id year
-tsfill, full
-
+insobs 2
+replace Identifier = "ZWE2019" in 5685
+replace Identifier = "ZWE2020" in 5686
+replace year=2019 in 5685
+replace year=2020 in 5686
 encode Country, gen(cntry)
 encode Country_Code, gen(ISO)
+tsset ISO year
+tsfill, full
 
 foreach v in cntry ISO Reg {
 
@@ -162,11 +161,12 @@ drop cntry ISO
 
 tostring year, gen(yr)
 egen ident2=concat(Country_Code yr)
-replace identifier=ident2 if identifier==""
+replace Identifier=ident2 if Identifier==""
 drop yr ident2
-order Country Country_Code, after(id)
+order Country Country_Code, after(Identifier)
 
 drop if Country=="South Sudan" & year<2010
+drop if Country_Code==""
 
 //merge in WDI data (prepared at top of dofile)
 merge m:1 Country_Code year using `WDIdata'
@@ -174,14 +174,13 @@ drop if _merge==2
 drop _merge
 
 //the rest of this section was first developed by Sebastian James
-
 gen ln_GDP_PC = ln(GDP_PC)
 label var ln_GDP_PC "Log of GDP Per Capita"
 
 gen ln_GDP_PC2 = ln_GDP_PC^2
 label var ln_GDP_PC2 "Log of GDP Per Capita Squared"
 
-// identifying outliers and removing
+//identifying outliers and removing
 foreach u in Total_Revenue_incl_SC ///
  Total_Revenue_excl_SC Tot_Rev_excl_grant_incl_SC Tot_Rev_excl_grant_excl_SC ///
  Total_Resource_Revenue Total_Non_Res_Rev_incl_SC Tax_Revenue_incl_SC ///
@@ -283,6 +282,62 @@ replace Reg=3 if Country=="Saint Vincent and the Grenadines"
 
 save "Master Dataset.dta", replace
 
+/********************************/
+/**World Development Indicators**/
+/********************************/
+
+import excel using "WDI July 1 2020.xlsx", firstrow cellrange(A1:P6511) clear
+save "WDI July 1 2020.dta", replace
+
+rename (Manufactu Informalemploymentoftotal Informalemploymentfemaleo ///
+ Informalemploymentmaleof Agricultureforestryandfishi OilrentsofGDPNYGDPPET ///
+ Totalnaturalresourcesrents GINIindexWorldBankestimate PopulationtotalSPPOPTOTL ///
+ ExpenseofGDPGCXPNTOTL Ratiooffemaletomalelaborfo P) (manu_share informal ///
+ informal_emp_f informal_emp_m agri_share oilrents resourcerents GINI Population ///
+ Gov_Exp_GDP LaborForceFtoM_ILO LaborForceFtoM_Natl)
+rename CountryCode Country_Code
+rename Time year
+label var manu_share "[WDI] Manufacturing, value added (% of GDP)"
+label var informal "[WDI] Informal employment (% of total non-ag emp.) (miss. data given latest vals)"
+label var agri_share "[WDI] Agriculture, value added (% of GDP)"
+label var resourcerents "[WDI] Natural resource rents as a percent of GDP"
+label var oilrents "[WDI] Oil rents as a percent of GDP"
+label var LaborForceFtoM_Natl "[WDI] Labor Force Participation Female to Male (National Estimate)"
+label var LaborForceFtoM_ILO "[WDI] Labor Force Participation Female to Male (ILO Estimate)"
+label var Population "[WDI] Population"
+label var Gov_Exp_GDP "[WDI] Expense (% of GDP)"
+label var informal_emp_f "[WDI] Informal employment, female (% of total non-agricultural employment)"
+label var informal_emp_m "[WDI] Informal employment, male (% of total non-agricultural employment)"
+
+tempfile WDI
+save	`WDI', replace
+
+use "Master Dataset.dta", clear
+cap drop manu_share informal informal_emp_f informal_emp_m agri_share oilrents ///
+ resourcerents GINI Population Gov_Exp_GDP LaborForceFtoM_ILO LaborForceFtoM_Natl
+merge 1:1 Country_Code year using `WDI'
+drop if _merge==2
+drop _merge
+
+tsset cntry year
+gen resource_tminus1 = l.resourcerents
+gen resource_tminus2 = l.resource_tminus1
+egen threeyearresource=rowmean(resourcerents resource_tminus1 resource_tminus2)
+gen resource_rich=.
+replace resource_rich=1 if threeyearresource>=10 & threeyearresource<.
+replace resource_rich=0 if threeyearresource<10
+drop resource_tminus1 resource_tminus2 threeyearresource
+
+tsset cntry year
+gen oil_tminus1 = l.oilrents
+gen oil_tminus2 = l.oil_tminus1
+egen threeyearoil=rowmean(oilrents oil_tminus1 oil_tminus2)
+gen oil_rich=.
+replace oil_rich=1 if threeyearoil>=10 & threeyearoil<.
+replace oil_rich=0 if threeyearoil<10
+drop oil_tminus1 oil_tminus2 threeyearoil
+
+save "Master Dataset.dta", replace
 /********************************/
 /**World Development Indicators**/
 /********************************/
@@ -679,13 +734,128 @@ save "Master Dataset.dta", replace
 /*** Doing Business ***/
 /**********************/
 
-use "Doing Business Historical - Paying Taxes.dta", clear
-drop rank
+import excel "Historical-data---COMPLETE-dataset-with-scores.xlsx", ///
+ sheet("All data") clear
+ 
+keep A B E F G H I J K L M N O P Q R S T U V W X Y DJ DK DL DM DN DO DP DQ DR DS ///
+ DT DU DV DW DX DY DZ EA EB EC ED
+ 
+rename (A B E F G H I J K L M N O P Q R S T U V W X Y DJ DK DL DM DN DO DP DQ DR DS ///
+ DT DU DV DW DX DY DZ EA EB EC ED) (Country_Code Country year rank_ease_db score_ease_db_17 ///
+ score_ease_db_15 score_ease_db_10 rank_start_b score_start_b procedures_start_b_m ///
+ score_procedures_start_b_m days_start_b_m score_days_start_b_m cost_start_b_m ///
+ score_cost_start_b_m procedures_start_b_w score_procedures_start_b_w days_start_b_w ///
+ score_days_start_b_w cost_start_b_w score_cost_start_b_w minimum_cap score_minimum_cap ///
+ rank_paying_taxes score_pt_17 score_pt_06 npayments score_npayments time_pt ///
+ score_time_pt ttr score_ttr profit_tax labor_tax other_taxes comply_VAT_refund_17 ///
+ score_comply_VAT_refund_17 get_VAT_refund_17 score_get_VAT_refund_17 ///
+ CIT_correction score_CIT_correction CIT_correction_complete score_CIT_correction_complete ///
+ score_postfiling_index)
+ 
+drop rank*
+
+drop in 1/4
+drop if Country_Code==""
+
+foreach v in year score_ease_db_17 score_ease_db_15 score_ease_db_10 score_start_b ///
+ procedures_start_b_m score_procedures_start_b_m days_start_b_m score_days_start_b_m ///
+ cost_start_b_m score_cost_start_b_m procedures_start_b_w score_procedures_start_b_w ///
+ days_start_b_w score_days_start_b_w cost_start_b_w score_cost_start_b_w minimum_cap ///
+ score_minimum_cap score_pt_17 score_pt_06 npayments score_npayments time_pt ///
+ score_time_pt ttr score_ttr profit_tax labor_tax other_taxes comply_VAT_refund_17 ///
+ score_comply_VAT_refund_17 get_VAT_refund_17 score_get_VAT_refund_17 CIT_correction ///
+ score_CIT_correction CIT_correction_complete score_CIT_correction_complete ///
+ score_postfiling_index {
+ 
+	replace `v'="" if `v'=="No VAT" | `v'=="No corporate income tax" | `v'=="No Practice" ///
+	 | `v'=="No VAT refund per case study scenario"
+	destring `v', replace
+ 
+}
+
+///Countries to collapse: Bangladesh, Brazil, China, Indonesia, India, Japan, Mexico, Nigeria, Pakistan, Russia, USA
+drop if Country_Code=="USA" | Country_Code=="USA_Losa"
+replace Country_Code="USA" if Country_Code=="US"
+drop if Country_Code=="RUS" | Country_Code=="RUS_Sai"
+replace Country_Code="RUS" if Country_Code=="RUSS"
+drop if Country_Code=="PAK" | Country_Code=="PAK_Laho"
+replace Country_Code="PAK" if Country_Code=="PAKI"
+drop if Country_Code=="NGA" | Country_Code=="NGA_Kano"
+replace Country_Code="NGA" if Country_Code=="NIGE"
+drop if Country_Code=="MEX" | Country_Code=="MEX_Mont"
+replace Country_Code="MEX" if Country_Code=="MEXI"
+drop if Country_Code=="JPN" | Country_Code=="JPN_Osak"
+replace Country_Code="JPN" if Country_Code=="JAP"
+drop if Country_Code=="IDN" | Country_Code=="IDN_Sura"
+replace Country_Code="IDN" if Country_Code=="INDO"
+drop if Country_Code=="IND" | Country_Code=="IND_Delh"
+replace Country_Code="IND" if Country_Code=="INDI"
+drop if Country_Code=="CHN" | Country_Code=="CHN_Beij"
+replace Country_Code="CHN" if Country_Code=="CHIN"
+drop if Country_Code=="BRA" | Country_Code=="BRA_Rio"
+replace Country_Code="BRA" if Country_Code=="BRAZ"
+drop if Country_Code=="BGD" | Country_Code=="BGD_Chit"
+replace Country_Code="BGD" if Country_Code=="BANG"
+
+lab var score_ease_db_17 "Ease of doing business score (DB17-20 methodology)"
+lab var score_ease_db_15 "Ease of doing business score (DB15 methodology)"
+lab var score_ease_db_10 "Ease of doing business score (DB10-14 methodology)"
+lab var score_start_b "Score-Starting a business"
+lab var procedures_start_b_m "Procedures - Men (number)"
+lab var score_procedures_start_b_m "Score-Procedures - Men (number)"
+lab var days_start_b_m "Time - Men (days)"
+lab var score_days_start_b_m "Score-Time - Men (days)"
+lab var cost_start_b_m "Cost - Men (% of income per capita)"
+lab var score_cost_start_b_m "Score-Cost - Men (% of income per capita)"
+lab var procedures_start_b_w "Procedures - Women (number)"
+lab var score_procedures_start_b_w "Score-Procedures - Women (number)"
+lab var days_start_b_w "Time - Women (days)"
+lab var score_days_start_b_w "Score-Time - Women (days)"
+lab var cost_start_b_w "Cost - Women (% of income per capita)"
+lab var score_cost_start_b_w "Score-Cost - Women (% of income per capita)"
+lab var minimum_cap "Paid-in Minimum capital (% of income per capita)"
+lab var score_minimum_cap"Score-Paid-in Minimum capital (% of income per capita)"
+lab var score_pt_17 "Score-Paying taxes (DB17-20 methodology)"
+lab var score_pt_06 "Score-Paying taxes (DB06-16 methodology)"
+lab var npayments "Payments (number per year)"
+lab var score_npayments "Score-Payments (number per year)"
+lab var time_pt "Time (hours per year)"
+lab var score_time_pt "Score-Time (hours per year)"
+lab var ttr "Total tax and contribution rate (% of profit)"
+lab var score_ttr "Score-Total tax and contribution rate (% of profit)"
+lab var profit_tax "Profit tax (% of profit)"
+lab var labor_tax "Labor tax and contributions (% of profit)"
+lab var other_taxes "Other taxes (% of profit)"
+lab var comply_VAT_refund_17 "Time to comply with VAT refund (hours) (DB17-20 methodology)"
+lab var score_comply_VAT_refund_17"Score-Time to comply with VAT refund (hours) (DB17-20 methodology)"
+lab var get_VAT_refund_17 "Time to obtain VAT refund (weeks) (DB17-20 methodology)"
+lab var score_get_VAT_refund_17 "Score-Time to obtain VAT refund (weeks) (DB17-20 methodology)"
+lab var CIT_correction "Time to comply with a corporate income tax correction (hours) (DB17-20 methodology)"
+lab var score_CIT_correction"Score-Time to comply with a corporate income tax correction (hours) (DB17-20 methodology)"
+lab var CIT_correction_complete "Time to complete a corporate income tax correction (weeks) (DB17-20 methodology)"
+lab var score_CIT_correction_complete "Score-Time to complete a corporate income tax correction (weeks) (DB17-20 methodology)"
+lab var score_postfiling_index "Score-Postfiling index (0-100) (DB17-20 methodology)"
+
+foreach v of varlist _all{
+	local u: variable label `v'
+	local x = "[Doing Business] " + "`u'"
+	label var `v' "`x'"
+}
+
+drop Country
+
+//changing country codes to match master dataset
+replace Country_Code="XKX" if Country_Code=="KSV"
+replace Country_Code="ROU" if Country_Code=="ROM"
+replace Country_Code="TLS" if Country_Code=="TMP"
+replace Country_Code="PSE" if Country_Code=="WBG"
+replace Country_Code="COD" if Country_Code=="ZAR"
 
 tempfile DBI_historic
 save	`DBI_historic', replace
 
 use "Master Dataset.dta", clear
+
 cap drop scoretaxes1719 scoretaxes0616 npayments timepayments ttr profittax ///
  labortax othertax timevat timevatrefund corpcompliancetime corpcompletiontime ///
  scorepostfiling scorepayments scoretime scorettr scoretimevatrefundcomply ///
@@ -693,6 +863,8 @@ cap drop scoretaxes1719 scoretaxes0616 npayments timepayments ttr profittax ///
 merge 1:1 Country_Code year using `DBI_historic'
 drop if _merge==2
 drop _merge
+
+save "Master Dataset.dta", replace
 
 /*********************/
 /*** Afrobarometer ***/
@@ -6762,7 +6934,7 @@ save "Master Dataset.dta", replace
 /*** TRIMMING EXTRA VARIABLES ***/
 /********************************/
 
-drop country resourcerevenuenotes socialcontributionsnotes inc generalnotes ///
+cap drop country resourcerevenuenotes socialcontributionsnotes inc generalnotes ///
   cautionnotes CountryName
 replace Country="Lao People's Democratic Republic" if Country=="Lao People’s Democratic Republic"
 sort Country year
