@@ -1,6 +1,6 @@
 //This dofile assembles and adapts 3rd-party datasets such that
 //they merge with ICTD data at the country-year level from 1990-2020
-//Last update: August 5, 2020.
+//Last update: September 21, 2020.
 
 /*Table of Contents (Ctrl-F the entire phrase)
 ICTD & GTT Calculations
