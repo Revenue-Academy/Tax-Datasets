@@ -5279,7 +5279,7 @@ save "Master Dataset.dta", replace
 /******WB Income Levels******/
 /****************************/
 
-import excel "OGHIST.xls", sheet("Country Analytical History") cellrange(A6:AG229) clear
+import excel "OGHIST_2019.xls", sheet("Country Analytical History") cellrange(A6:AI229) clear
 drop B C D E
 
 foreach var of varlist _all {
